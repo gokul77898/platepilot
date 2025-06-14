@@ -21,11 +21,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CalendarIcon, PlusCircle, Save, Trash2, Loader2, Lightbulb, Sparkles } from 'lucide-react';
-import type { Meal, MealPlan, MealType, Recipe, AiMealSuggestion, AiMealSuggestionInput } from '@/types';
+import { ArrowLeft, CalendarIcon, PlusCircle, Save, Trash2, Loader2, Lightbulb, Sparkles, CheckSquare, Square } from 'lucide-react';
+import type { Meal, MealPlan, MealType, Recipe, AiMealSuggestion, AiMealSuggestionInput, Ingredient as RecipeIngredient } from '@/types';
 import { cn } from '@/lib/utils';
 import { loadFromLocalStorage, saveToLocalStorage, generateId } from '@/lib/localStorage';
 import { getAiMealSuggestions } from '../actions';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 
 
 const MEAL_PLANS_STORAGE_KEY = 'mealPlans';
@@ -125,7 +127,7 @@ export default function NewMealPlanPage() {
     setIsAiLoading(true);
     setAiSuggestions([]);
     const input: AiMealSuggestionInput = {
-        mealType: aiMealType || undefined, // Send undefined if empty string for "any"
+        mealType: aiMealType || undefined, 
         dietaryPreferences: aiDietaryPreferences,
         keywords: aiKeywords,
     };
@@ -142,17 +144,25 @@ export default function NewMealPlanPage() {
   };
 
   const handleAddAiSuggestionToPlan = (suggestion: AiMealSuggestion) => {
+    const recipeIngredients: RecipeIngredient[] = suggestion.ingredients.map(ing => ({
+      id: generateId(),
+      name: ing.name,
+      quantity: ing.quantity || "N/A", // Default if AI doesn't provide
+      unit: ing.unit || "",
+    }));
+
     const newRecipe: Recipe = {
         id: generateId(),
         name: suggestion.name,
         description: suggestion.description || "AI-generated meal suggestion.",
-        ingredients: [], 
+        ingredients: recipeIngredients, 
         instructions: ["Details to be added by user."], 
-        prepTime: "N/A",
-        cookTime: "N/A",
-        servings: 1,
+        prepTime: "N/A", // User can fill this in later
+        cookTime: "N/A", // User can fill this in later
+        servings: 1, // Default, user can adjust
         nutritionalInfo: { calories: suggestion.estimatedCalories ?? undefined },
         imageUrl: `https://placehold.co/600x400.png?text=${encodeURIComponent(suggestion.name)}`,
+        dataAiHint: "food meal",
         tags: ["AI Suggested"],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -274,14 +284,14 @@ export default function NewMealPlanPage() {
       </Form>
 
       <Dialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg md:max-w-xl lg:max-w-2xl">
           <DialogHeader>
             <DialogTitle>AI Meal Suggestions</DialogTitle>
             <DialogDescription>
               Let AI suggest meals for {selectedDayForAi}, {selectedMealTypeForAi}. Fill in optional preferences.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="ai-meal-type">Target Meal Type (optional)</Label>
               <Select
@@ -298,12 +308,12 @@ export default function NewMealPlanPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ai-dietary-pref">Dietary Preferences (optional)</Label>
-              <Input id="ai-dietary-pref" placeholder="e.g., vegetarian, gluten-free, low-carb" value={aiDietaryPreferences} onChange={(e) => setAiDietaryPreferences(e.target.value)} />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="ai-keywords">Keywords (optional)</Label>
               <Input id="ai-keywords" placeholder="e.g., quick, healthy, high-protein" value={aiKeywords} onChange={(e) => setAiKeywords(e.target.value)} />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="ai-dietary-pref">Dietary Preferences (optional)</Label>
+              <Input id="ai-dietary-pref" placeholder="e.g., vegetarian, gluten-free, low-carb" value={aiDietaryPreferences} onChange={(e) => setAiDietaryPreferences(e.target.value)} />
             </div>
           </div>
           <DialogFooter className="flex flex-col sm:flex-row gap-2">
@@ -314,28 +324,45 @@ export default function NewMealPlanPage() {
           </DialogFooter>
 
           {aiSuggestions.length > 0 && (
-            <div className="mt-6 max-h-60 overflow-y-auto space-y-3 pr-2">
-              <h4 className="font-semibold text-md mb-2">Suggestions:</h4>
-              {aiSuggestions.map((suggestion, index) => (
-                <Card key={index} className="p-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-base">{suggestion.name}</CardTitle>
-                      <CardDescription className="text-xs">{suggestion.description}</CardDescription>
-                      {suggestion.estimatedCalories && <p className="text-xs text-primary font-medium mt-1">{suggestion.estimatedCalories} kcal (est.)</p>}
+            <ScrollArea className="mt-6 max-h-[calc(100vh-400px)] md:max-h-96 overflow-y-auto pr-2">
+              <h4 className="font-semibold text-md mb-3 sticky top-0 bg-background py-2 z-10">AI Suggestions:</h4>
+              <div className="space-y-4">
+                {aiSuggestions.map((suggestion, index) => (
+                  <Card key={index} className="p-4 shadow-sm">
+                    <div className="flex justify-between items-start mb-3">
+                      <CardTitle className="text-lg font-headline">{suggestion.name}</CardTitle>
+                      <Button type="button" size="sm" onClick={() => handleAddAiSuggestionToPlan(suggestion)} className="ml-2 shrink-0">Add to Plan</Button>
                     </div>
-                    <Button type="button" size="sm" onClick={() => handleAddAiSuggestionToPlan(suggestion)} className="ml-2 shrink-0">Add</Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                    <CardDescription className="text-sm mb-3">{suggestion.description}</CardDescription>
+                    
+                    {suggestion.ingredients && suggestion.ingredients.length > 0 && (
+                      <div className="mb-3">
+                        <h5 className="font-semibold text-sm mb-1.5">Ingredients:</h5>
+                        <ul className="space-y-1 text-xs text-muted-foreground list-disc list-inside">
+                          {suggestion.ingredients.map((ing, ingIndex) => (
+                            <li key={ingIndex}>
+                              {ing.quantity} {ing.unit || ''} {ing.name}
+                              {ing.estimatedCalories !== null && typeof ing.estimatedCalories === 'number' && ` (~${ing.estimatedCalories} kcal)`}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {suggestion.estimatedCalories !== null && (
+                      <p className="text-sm font-semibold text-primary mt-2">
+                        Total Estimated Calories: {suggestion.estimatedCalories} kcal
+                      </p>
+                    )}
+                     {index < aiSuggestions.length -1 && <Separator className="my-4" />}
+                  </Card>
+                ))}
+              </div>
+            </ScrollArea>
           )}
-           {isAiLoading && <div className="text-center p-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /> <p className="text-sm text-muted-foreground">AI is thinking...</p></div>}
+           {isAiLoading && <div className="text-center p-6"><Loader2 className="h-8 w-8 animate-spin text-primary" /> <p className="text-sm text-muted-foreground mt-2">AI is conjuring meal ideas...</p></div>}
         </DialogContent>
       </Dialog>
     </div>
   );
 }
-    
-
     

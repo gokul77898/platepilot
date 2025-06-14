@@ -99,16 +99,24 @@ export interface PantryItem {
   createdAt?: string;
 }
 
-// For AI Meal Suggestion with Calories (New)
+// For AI Meal Suggestion with Calories (Enhanced)
 export interface AiMealSuggestionInput {
   mealType?: string;
   dietaryPreferences?: string;
   keywords?: string;
 }
 
+export interface AiSuggestedIngredient {
+  name: string;
+  quantity?: string;
+  unit?: string;
+  estimatedCalories?: number | null;
+}
+
 export interface AiMealSuggestion {
   name: string;
   description: string;
+  ingredients: AiSuggestedIngredient[];
   estimatedCalories: number | null;
 }
 export type AiMealSuggestionOutput = AiMealSuggestion[];
@@ -120,3 +128,4 @@ export interface ChatMessage {
   sender: 'user' | 'bot';
   timestamp: Date;
 }
+
