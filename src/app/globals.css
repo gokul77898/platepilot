@@ -85,6 +85,14 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground font-body;
+    @apply text-foreground font-body antialiased;
+    /* Subtle gradient from main background to a slightly different tone */
+    background: hsl(var(--background)); /* Fallback */
+    background-image: linear-gradient(
+      180deg,
+      hsl(var(--background)) 0%,
+      color-mix(in srgb, hsl(var(--background)) 90%, hsl(var(--secondary)) 10%) 100%
+    );
+    min-height: 100vh; /* Ensure gradient covers full viewport height */
   }
 }
