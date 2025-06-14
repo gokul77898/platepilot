@@ -19,12 +19,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label'; // Added basic Label import
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, CalendarIcon, PlusCircle, Save, Trash2, Loader2, Lightbulb, Sparkles } from 'lucide-react';
 import type { Meal, MealPlan, MealType, Recipe, AiMealSuggestion, AiMealSuggestionInput } from '@/types';
 import { cn } from '@/lib/utils';
 import { loadFromLocalStorage, saveToLocalStorage, generateId } from '@/lib/localStorage';
-import { getAiMealSuggestions } from '../actions'; // Adjusted path
+import { getAiMealSuggestions } from '../actions'; 
 
 const MEAL_PLANS_STORAGE_KEY = 'mealPlans';
 const RECIPES_STORAGE_KEY = 'recipes';
@@ -115,10 +116,8 @@ export default function EditMealPlanPage() {
       }
       setIsLoading(false);
     } else {
-        // If no planId, it might be an error or unintended navigation.
-        // Redirect or show a message. For now, just stop loading.
         setIsLoading(false);
-        router.push('/meal-plans'); // Or a dedicated error page/toast
+        router.push('/meal-plans'); 
     }
   }, [planId, form, router, toast]);
 
@@ -235,8 +234,6 @@ export default function EditMealPlanPage() {
   }
 
   if (!mealPlanToEdit) {
-     // This case should ideally be handled by the redirect in useEffect,
-     // but as a fallback:
     return <p>Meal plan not found or error loading.</p>;
   }
 
@@ -266,10 +263,10 @@ export default function EditMealPlanPage() {
                   <FormLabel>Week Start Date</FormLabel> 
                   <Popover> 
                     <PopoverTrigger asChild> 
-                      <Button variant={"outline"} className={cn("w-full md:w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")} > 
-                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>} 
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" /> 
-                      </Button> 
+                        <Button variant={"outline"} className={cn("w-full md:w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")} > 
+                          {field.value ? format(field.value, "PPP") : <span>Pick a date</span>} 
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" /> 
+                        </Button> 
                     </PopoverTrigger> 
                     <PopoverContent className="w-auto p-0" align="start"> 
                       <Calendar 
@@ -334,24 +331,24 @@ export default function EditMealPlanPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <FormItem>
-              <FormLabel>Target Meal Type (optional)</FormLabel>
+            <div className="space-y-2">
+              <Label htmlFor="ai-meal-type-edit">Target Meal Type (optional)</Label>
               <Select value={aiMealType} onValueChange={setAiMealType}>
-                <SelectTrigger><SelectValue placeholder="Any Meal Type" /></SelectTrigger>
+                <SelectTrigger id="ai-meal-type-edit"><SelectValue placeholder="Any Meal Type" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">Any</SelectItem>
                   {mealTypes.map(type => <SelectItem key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</SelectItem>)}
                 </SelectContent>
               </Select>
-            </FormItem>
-            <FormItem>
-              <FormLabel>Dietary Preferences (optional)</FormLabel>
-              <Input placeholder="e.g., vegetarian, gluten-free, low-carb" value={aiDietaryPreferences} onChange={(e) => setAiDietaryPreferences(e.target.value)} />
-            </FormItem>
-            <FormItem>
-              <FormLabel>Keywords (optional)</FormLabel>
-              <Input placeholder="e.g., quick, healthy, high-protein" value={aiKeywords} onChange={(e) => setAiKeywords(e.target.value)} />
-            </FormItem>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ai-dietary-pref-edit">Dietary Preferences (optional)</Label>
+              <Input id="ai-dietary-pref-edit" placeholder="e.g., vegetarian, gluten-free, low-carb" value={aiDietaryPreferences} onChange={(e) => setAiDietaryPreferences(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ai-keywords-edit">Keywords (optional)</Label>
+              <Input id="ai-keywords-edit" placeholder="e.g., quick, healthy, high-protein" value={aiKeywords} onChange={(e) => setAiKeywords(e.target.value)} />
+            </div>
           </div>
           <DialogFooter className="flex flex-col sm:flex-row gap-2">
             <Button type="button" variant="outline" onClick={() => setIsAiDialogOpen(false)}>Cancel</Button>
@@ -383,5 +380,6 @@ export default function EditMealPlanPage() {
     </div>
   );
 }
+    
 
     

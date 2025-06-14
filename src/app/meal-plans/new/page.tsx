@@ -19,6 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label'; // Added basic Label import
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, CalendarIcon, PlusCircle, Save, Trash2, Loader2, Lightbulb, Sparkles } from 'lucide-react';
 import type { Meal, MealPlan, MealType, Recipe, AiMealSuggestion, AiMealSuggestionInput } from '@/types';
@@ -123,7 +124,7 @@ export default function NewMealPlanPage() {
     setIsAiLoading(true);
     setAiSuggestions([]);
     const input: AiMealSuggestionInput = {
-        mealType: aiMealType || selectedMealTypeForAi, // Prioritize specific AI input, fallback to selected slot
+        mealType: aiMealType || selectedMealTypeForAi, 
         dietaryPreferences: aiDietaryPreferences,
         keywords: aiKeywords,
     };
@@ -144,8 +145,8 @@ export default function NewMealPlanPage() {
         id: generateId(),
         name: suggestion.name,
         description: suggestion.description || "AI-generated meal suggestion.",
-        ingredients: [], // Placeholder
-        instructions: ["Details to be added by user."], // Placeholder
+        ingredients: [], 
+        instructions: ["Details to be added by user."], 
         prepTime: "N/A",
         cookTime: "N/A",
         servings: 1,
@@ -169,14 +170,14 @@ export default function NewMealPlanPage() {
     });
 
     toast({ title: "Meal Added", description: `${suggestion.name} added to your plan for ${selectedDayForAi}, ${selectedMealTypeForAi}.` });
-    setIsAiDialogOpen(false); // Close dialog after adding
-    setAiSuggestions([]); // Clear suggestions
+    setIsAiDialogOpen(false); 
+    setAiSuggestions([]); 
   };
   
   const openAiDialog = (day?: Meal['dayOfWeek'], mealType?: MealType) => {
     setSelectedDayForAi(day || 'Monday');
     setSelectedMealTypeForAi(mealType || 'breakfast');
-    setAiMealType(mealType || ''); // Pre-fill if specific slot
+    setAiMealType(mealType || ''); 
     setAiDietaryPreferences('');
     setAiKeywords('');
     setAiSuggestions([]);
@@ -212,10 +213,10 @@ export default function NewMealPlanPage() {
                   <FormLabel>Week Start Date</FormLabel> 
                   <Popover> 
                     <PopoverTrigger asChild> 
-                      <Button variant={"outline"} className={cn("w-full md:w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")} > 
-                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>} 
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" /> 
-                      </Button> 
+                        <Button variant={"outline"} className={cn("w-full md:w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")} > 
+                          {field.value ? format(field.value, "PPP") : <span>Pick a date</span>} 
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" /> 
+                        </Button> 
                     </PopoverTrigger> 
                     <PopoverContent className="w-auto p-0" align="start"> 
                       <Calendar 
@@ -280,24 +281,24 @@ export default function NewMealPlanPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <FormItem>
-              <FormLabel>Target Meal Type (optional)</FormLabel>
+            <div className="space-y-2">
+              <Label htmlFor="ai-meal-type">Target Meal Type (optional)</Label>
               <Select value={aiMealType} onValueChange={setAiMealType}>
-                <SelectTrigger><SelectValue placeholder="Any Meal Type" /></SelectTrigger>
+                <SelectTrigger id="ai-meal-type"><SelectValue placeholder="Any Meal Type" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">Any</SelectItem>
                   {mealTypes.map(type => <SelectItem key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</SelectItem>)}
                 </SelectContent>
               </Select>
-            </FormItem>
-            <FormItem>
-              <FormLabel>Dietary Preferences (optional)</FormLabel>
-              <Input placeholder="e.g., vegetarian, gluten-free, low-carb" value={aiDietaryPreferences} onChange={(e) => setAiDietaryPreferences(e.target.value)} />
-            </FormItem>
-            <FormItem>
-              <FormLabel>Keywords (optional)</FormLabel>
-              <Input placeholder="e.g., quick, healthy, high-protein" value={aiKeywords} onChange={(e) => setAiKeywords(e.target.value)} />
-            </FormItem>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ai-dietary-pref">Dietary Preferences (optional)</Label>
+              <Input id="ai-dietary-pref" placeholder="e.g., vegetarian, gluten-free, low-carb" value={aiDietaryPreferences} onChange={(e) => setAiDietaryPreferences(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ai-keywords">Keywords (optional)</Label>
+              <Input id="ai-keywords" placeholder="e.g., quick, healthy, high-protein" value={aiKeywords} onChange={(e) => setAiKeywords(e.target.value)} />
+            </div>
           </div>
           <DialogFooter className="flex flex-col sm:flex-row gap-2">
             <Button type="button" variant="outline" onClick={() => setIsAiDialogOpen(false)}>Cancel</Button>
@@ -329,7 +330,6 @@ export default function NewMealPlanPage() {
     </div>
   );
 }
-
     
 
     
