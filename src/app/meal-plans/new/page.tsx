@@ -18,7 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, CalendarIcon, PlusCircle, Save, Trash2, Loader2, Lightbulb, Sparkles } from 'lucide-react';
 import type { Meal, MealPlan, MealType, Recipe, AiMealSuggestion, AiMealSuggestionInput } from '@/types';
@@ -207,7 +207,29 @@ export default function NewMealPlanPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Plan Name</FormLabel> <FormControl><Input placeholder="e.g., Healthy Week, Family Dinners" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="weekStartDate" render={({ field }) => ( <FormItem className="flex flex-col"> <FormLabel>Week Start Date</FormLabel> <Popover> <PopoverTrigger asChild> <FormControl> <Button variant={"outline"} className={cn("w-full md:w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")} > {field.value ? format(field.value, "PPP") : <span>Pick a date</span>} <CalendarIcon className="ml-auto h-4 w-4 opacity-50" /> </Button> </FormControl> </PopoverTrigger> <PopoverContent className="w-auto p-0" align="start"> <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() -1))} initialFocus /> </PopoverContent> </Popover> <FormMessage /> </FormItem> )} />
+              <FormField control={form.control} name="weekStartDate" render={({ field }) => ( 
+                <FormItem className="flex flex-col"> 
+                  <FormLabel>Week Start Date</FormLabel> 
+                  <Popover> 
+                    <PopoverTrigger asChild> 
+                      <Button variant={"outline"} className={cn("w-full md:w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")} > 
+                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>} 
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" /> 
+                      </Button> 
+                    </PopoverTrigger> 
+                    <PopoverContent className="w-auto p-0" align="start"> 
+                      <Calendar 
+                        mode="single" 
+                        selected={field.value} 
+                        onSelect={field.onChange} 
+                        disabled={(date) => date < new Date(new Date().setDate(new Date().getDate() -1))} 
+                        initialFocus 
+                      /> 
+                    </PopoverContent> 
+                  </Popover> 
+                  <FormMessage /> 
+                </FormItem> 
+              )} />
               <FormField control={form.control} name="description" render={({ field }) => ( <FormItem> <FormLabel>Description (Optional)</FormLabel> <FormControl><Textarea placeholder="Any notes about this meal plan..." {...field} /></FormControl> <FormMessage /> </FormItem> )} />
             </CardContent>
           </Card>
@@ -307,5 +329,7 @@ export default function NewMealPlanPage() {
     </div>
   );
 }
+
+    
 
     
