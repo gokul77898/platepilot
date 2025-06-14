@@ -24,7 +24,7 @@ import { ArrowLeft, CalendarIcon, PlusCircle, Save, Trash2, Loader2, Lightbulb, 
 import type { Meal, MealPlan, MealType, Recipe, AiMealSuggestion, AiMealSuggestionInput } from '@/types';
 import { cn } from '@/lib/utils';
 import { loadFromLocalStorage, saveToLocalStorage, generateId } from '@/lib/localStorage';
-import { getAiMealSuggestions } from './actions';
+import { getAiMealSuggestions } from '../actions';
 
 
 const MEAL_PLANS_STORAGE_KEY = 'mealPlans';
@@ -307,3 +307,5 @@ export default function NewMealPlanPage() {
     </div>
   );
 }
+
+    
