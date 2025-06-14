@@ -19,7 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label'; // Added basic Label import
+import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, CalendarIcon, PlusCircle, Save, Trash2, Loader2, Lightbulb, Sparkles } from 'lucide-react';
 import type { Meal, MealPlan, MealType, Recipe, AiMealSuggestion, AiMealSuggestionInput } from '@/types';
@@ -30,6 +30,7 @@ import { getAiMealSuggestions } from '../actions';
 
 const MEAL_PLANS_STORAGE_KEY = 'mealPlans';
 const RECIPES_STORAGE_KEY = 'recipes';
+const AI_SUGGESTION_ANY_MEAL_TYPE_VALUE = "__any_meal_type_placeholder__";
 
 
 const mealSchema = z.object({
@@ -124,7 +125,7 @@ export default function NewMealPlanPage() {
     setIsAiLoading(true);
     setAiSuggestions([]);
     const input: AiMealSuggestionInput = {
-        mealType: aiMealType || selectedMealTypeForAi, 
+        mealType: aiMealType || undefined, // Send undefined if empty string for "any"
         dietaryPreferences: aiDietaryPreferences,
         keywords: aiKeywords,
     };
@@ -254,7 +255,7 @@ export default function NewMealPlanPage() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <FormField control={form.control} name={`meals.${index}.dayOfWeek`} render={({ field: dayField }) => ( <FormItem> <FormLabel>Day</FormLabel> <Select onValueChange={dayField.onChange} defaultValue={dayField.value}> <FormControl><SelectTrigger><SelectValue placeholder="Select day" /></SelectTrigger></FormControl> <SelectContent> {daysOfWeek.map(day => <SelectItem key={day} value={day}>{day}</SelectItem>)} </SelectContent> </Select> <FormMessage /> </FormItem> )} />
                         <FormField control={form.control} name={`meals.${index}.mealType`} render={({ field: typeField }) => ( <FormItem> <FormLabel>Meal Type</FormLabel> <Select onValueChange={typeField.onChange} defaultValue={typeField.value}> <FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl> <SelectContent> {mealTypes.map(type => <SelectItem key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</SelectItem>)} </SelectContent> </Select> <FormMessage /> </FormItem> )} />
-                        <FormField control={form.control} name={`meals.${index}.recipeId`} render={({ field: recipeField }) => ( <FormItem> <FormLabel>Recipe</FormLabel> <Select onValueChange={recipeField.onChange} defaultValue={recipeField.value}> <FormControl><SelectTrigger><SelectValue placeholder="Select recipe" /></SelectTrigger></FormControl> <SelectContent> {availableRecipes.length > 0 ? availableRecipes.map(recipe => <SelectItem key={recipe.id} value={recipe.id}>{recipe.name}</SelectItem>) : <SelectItem value="" disabled>No recipes available</SelectItem>} </SelectContent> </Select> <FormMessage /> </FormItem> )} />
+                        <FormField control={form.control} name={`meals.${index}.recipeId`} render={({ field: recipeField }) => ( <FormItem> <FormLabel>Recipe</FormLabel> <Select onValueChange={recipeField.onChange} defaultValue={recipeField.value}> <FormControl><SelectTrigger><SelectValue placeholder="Select recipe" /></SelectTrigger></FormControl> <SelectContent> {availableRecipes.length > 0 ? availableRecipes.map(recipe => <SelectItem key={recipe.id} value={recipe.id}>{recipe.name}</SelectItem>) : <SelectItem value="no_recipes_available_placeholder" disabled>No recipes available</SelectItem>} </SelectContent> </Select> <FormMessage /> </FormItem> )} />
                       </div>
                        <div className="mt-2 text-right">
                         <Button type="button" variant="link" size="sm" className="text-accent hover:text-accent/80" onClick={() => openAiDialog(form.getValues(`meals.${index}.dayOfWeek`), form.getValues(`meals.${index}.mealType`))}> <Sparkles className="mr-1 h-3 w-3" /> AI idea for this slot </Button>
@@ -283,10 +284,15 @@ export default function NewMealPlanPage() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="ai-meal-type">Target Meal Type (optional)</Label>
-              <Select value={aiMealType} onValueChange={setAiMealType}>
+              <Select
+                value={aiMealType === '' ? AI_SUGGESTION_ANY_MEAL_TYPE_VALUE : aiMealType}
+                onValueChange={(value) => {
+                  setAiMealType(value === AI_SUGGESTION_ANY_MEAL_TYPE_VALUE ? '' : value);
+                }}
+              >
                 <SelectTrigger id="ai-meal-type"><SelectValue placeholder="Any Meal Type" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Any</SelectItem>
+                  <SelectItem value={AI_SUGGESTION_ANY_MEAL_TYPE_VALUE}>Any</SelectItem>
                   {mealTypes.map(type => <SelectItem key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</SelectItem>)}
                 </SelectContent>
               </Select>
