@@ -11,12 +11,12 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const ChatbotInputSchema = z.object({
+const ChatbotInputSchema = z.object({
   userQuery: z.string().describe("The user's question or message to the chatbot."),
 });
 export type ChatbotInput = z.infer<typeof ChatbotInputSchema>;
 
-export const ChatbotOutputSchema = z.object({
+const ChatbotOutputSchema = z.object({
   aiResponse: z.string().describe("The chatbot's response to the user query."),
 });
 export type ChatbotOutput = z.infer<typeof ChatbotOutputSchema>;
