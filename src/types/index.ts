@@ -112,3 +112,11 @@ export interface AiMealSuggestion {
   estimatedCalories: number | null;
 }
 export type AiMealSuggestionOutput = AiMealSuggestion[];
+
+// For Chatbot
+export interface ChatMessage {
+  id: string;
+  text: string;
+  sender: 'user' | 'bot';
+  timestamp: Date;
+}

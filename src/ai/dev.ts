@@ -5,4 +5,6 @@ config();
 import '@/ai/flows/suggest-alternative-recipes.ts';
 import '@/ai/flows/suggest-recipes-given-constraints.ts';
 import '@/ai/flows/analyze-meal-image-flow.ts';
-import '@/ai/flows/suggest-meals-with-calories-flow.ts'; // Added new flow
+import '@/ai/flows/suggest-meals-with-calories-flow.ts';
+import '@/ai/flows/chatbot-flow.ts'; // Added new chatbot flow
+

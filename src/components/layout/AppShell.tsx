@@ -21,6 +21,7 @@ import Logo from '@/components/icons/Logo';
 import { Button } from '@/components/ui/button';
 import { LayoutDashboard, UtensilsCrossed, BookOpenText, ShoppingCart, Lightbulb, Settings, LogOut, PanelLeftOpen, PanelLeftClose, Archive, ScanSearch } from 'lucide-react';
 import { Toaster } from "@/components/ui/toaster";
+import Chatbot from '@/components/chatbot/Chatbot'; // Import the Chatbot
 
 interface NavItem {
   href: string;
@@ -71,7 +72,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <SidebarMenu>
               {navItems.map((item) => (
                  <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
+                   <SidebarMenuButton
                     asChild
                     isActive={pathname === item.href}
                     tooltip={{ children: item.label, side: 'right', className: 'ml-2' }}
@@ -103,11 +104,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </SidebarFooter>
         </Sidebar>
         
-        <SidebarInset className="flex-1 flex flex-col bg-background">
+        <SidebarInset className="flex-1 flex flex-col bg-background relative"> {/* Added relative positioning */}
           <MobileHeader />
           <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
             {children}
           </main>
+          <Chatbot /> {/* Added Chatbot component here */}
         </SidebarInset>
       </div>
       <Toaster />
