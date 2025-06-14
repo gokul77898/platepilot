@@ -105,7 +105,7 @@ export interface AiMealSuggestionInput {
   mealType?: string;
   dietaryPreferences?: string;
   keywords?: string;
-  healthGoals?: string; // Added health goals
+  healthGoals?: string; 
 }
 
 export interface AiSuggestedIngredient {
@@ -129,4 +129,17 @@ export interface ChatMessage {
   text: string;
   sender: 'user' | 'bot';
   timestamp: Date;
+}
+
+// For AI Coach - User Profile Goals
+export interface UserProfileGoals {
+  primaryGoal: string;
+  dietaryPreferences: string;
+  challenges: string;
+}
+
+export interface GenerateCoachingStatementInput extends UserProfileGoals {}
+
+export interface GenerateCoachingStatementOutput {
+  statement: string;
 }
