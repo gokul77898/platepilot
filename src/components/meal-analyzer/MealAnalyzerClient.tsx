@@ -5,13 +5,14 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label'; // Changed from FormLabel
+import { Label } from '@/components/ui/label';
 import { analyzeUploadedMealImage } from '@/app/smart-suggestions/actions';
 import type { AnalyzeMealImageOutput } from '@/types';
-import { Loader2, Camera, CheckCircle, XCircle, Activity, Info } from 'lucide-react';
+import { Loader2, Camera, CheckCircle, XCircle, Activity, Info, Tag } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from '@/components/ui/badge';
 
 export default function MealAnalyzerClient() {
   const [mealImageFile, setMealImageFile] = useState<File | null>(null);
@@ -70,8 +71,8 @@ export default function MealAnalyzerClient() {
           <CardDescription>For best results, use a clear image of the food. The AI will try to identify it and provide insights.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2"> {/* Replaced FormItem with div */}
-            <Label htmlFor="meal-image-upload">Meal Image</Label> {/* Replaced FormLabel with Label */}
+          <div className="space-y-2">
+            <Label htmlFor="meal-image-upload">Meal Image</Label>
             <Input id="meal-image-upload" type="file" accept="image/*" onChange={handleImageFileChange} className="border p-2 rounded-md file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"/>
             {mealImageDataUri && (
                 <div className="mt-4 border rounded-md p-2 inline-block shadow-sm">
@@ -129,6 +130,21 @@ export default function MealAnalyzerClient() {
                     <p className="text-sm text-muted-foreground">{mealImageAnalysis.consumptionAdvice}</p>
                 </Card>
             </div>
+
+            {mealImageAnalysis.dietaryFlags && mealImageAnalysis.dietaryFlags.length > 0 && (
+              <Card className="p-4 bg-muted/30 dark:bg-muted/50">
+                <div className="flex items-center mb-2">
+                  <Tag className="h-5 w-5 mr-2 text-primary" />
+                  <h4 className="font-semibold text-lg">Potential Dietary Flags</h4>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {mealImageAnalysis.dietaryFlags.map((flag, index) => (
+                    <Badge key={index} variant="secondary" className="text-sm">{flag}</Badge>
+                  ))}
+                </div>
+              </Card>
+            )}
+
             <p className="text-xs text-center text-muted-foreground pt-4">
               Disclaimer: This analysis is AI-generated and for informational purposes only. It is not a substitute for professional nutritional advice.
             </p>

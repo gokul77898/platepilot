@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview Analyzes a meal image to estimate calories, assess healthiness, and provide consumption advice.
+ * @fileOverview Analyzes a meal image to estimate calories, assess healthiness, provide consumption advice, and identify dietary flags.
  *
  * - analyzeMealImage - A function that handles the meal image analysis.
  * - AnalyzeMealImageInput - The input type for the analyzeMealImage function.
@@ -26,6 +26,7 @@ const AnalyzeMealImageOutputSchema = z.object({
   isHealthy: z.boolean().describe("Whether the meal is generally considered healthy."),
   healthinessReason: z.string().describe("A brief explanation for why the meal is or isn't considered healthy."),
   consumptionAdvice: z.string().describe("General advice on what might be a typical consumption amount for an average adult (e.g., 'This portion seems appropriate for one person', 'Consider sharing or saving some for later if it's a large portion')."),
+  dietaryFlags: z.array(z.string()).optional().describe("A list of potential dietary flags or attributes observed (e.g., 'Likely contains Gluten', 'Appears Dairy-Free', 'High Sugar', 'Vegetarian-Friendly'). Be cautious and use terms like 'Likely' or 'Potential' if not certain. If no specific flags are confidently identified, this can be an empty array or omitted."),
 });
 export type AnalyzeMealImageOutput = z.infer<typeof AnalyzeMealImageOutputSchema>;
 
@@ -37,7 +38,13 @@ const prompt = ai.definePrompt({
   name: 'analyzeMealImagePrompt',
   input: {schema: AnalyzeMealImageInputSchema},
   output: {schema: AnalyzeMealImageOutputSchema},
-  prompt: `You are a nutritional analysis AI. Based on the provided image of a meal, identify the dish, estimate the total calories, determine if it's generally healthy, provide a brief reason for the healthiness assessment, and offer general advice on a typical consumption amount for an average adult.
+  prompt: `You are a nutritional analysis AI. Based on the provided image of a meal:
+1. Identify the dish.
+2. Estimate the total calories.
+3. Determine if it's generally healthy.
+4. Provide a brief reason for the healthiness assessment.
+5. Offer general advice on a typical consumption amount for an average adult.
+6. List any common dietary flags or attributes you can reasonably infer (e.g., 'Likely contains Gluten', 'Appears Dairy-Free', 'High Sugar', 'Good source of protein', 'Vegetarian option'). Preface flags with 'Potential:' or 'Likely:' where appropriate. If unsure about specific flags, do not list them or return an empty array for dietaryFlags.
 
 Your response MUST be in the specified JSON output format.
 If you cannot confidently identify the dish or estimate calories, set estimatedCalories to null and provide your best assessment for other fields.
@@ -45,7 +52,7 @@ Focus on common food items and general nutritional principles. This is not medic
 
 Image of the meal: {{media url=imageDataUri}}`,
   config: {
-    safetySettings: [ // Adjusted for potentially sensitive topics like health advice, though still general.
+    safetySettings: [ 
       {
         category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
         threshold: 'BLOCK_MEDIUM_AND_ABOVE',
@@ -68,4 +75,3 @@ const analyzeMealImageFlow = ai.defineFlow(
     return output;
   }
 );
-

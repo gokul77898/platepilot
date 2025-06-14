@@ -85,6 +85,7 @@ export interface AnalyzeMealImageOutput {
   isHealthy: boolean;
   healthinessReason: string;
   consumptionAdvice: string;
+  dietaryFlags?: string[]; // Added for dietary flags
 }
 
 
