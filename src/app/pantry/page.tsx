@@ -147,7 +147,23 @@ export default function PantryPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField control={form.control} name="quantity" render={({ field }) => ( <FormItem> <FormLabel>Quantity</FormLabel> <FormControl><Input placeholder="e.g., 1" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
                   <FormField control={form.control} name="unit" render={({ field }) => ( <FormItem> <FormLabel>Unit</FormLabel> <FormControl><Input placeholder="e.g., kg, pack" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-                  <FormField control={form.control} name="expiryDate" render={({ field }) => ( <FormItem className="flex flex-col"> <FormLabel>Expiry Date (Optional)</FormLabel> <Popover> <PopoverTrigger asChild> <FormControl> <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")} > {field.value ? format(field.value, "PPP") : <span>Pick a date</span>} <CalendarIcon className="ml-auto h-4 w-4 opacity-50" /> </Button> </FormControl> </PopoverTrigger> <PopoverContent className="w-auto p-0" align="start"> <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /> </PopoverContent> </Popover> <FormMessage /> </FormItem> )} />
+                  <FormField control={form.control} name="expiryDate" render={({ field }) => ( 
+                    <FormItem className="flex flex-col"> 
+                      <FormLabel>Expiry Date (Optional)</FormLabel> 
+                      <Popover> 
+                        <PopoverTrigger asChild> 
+                            <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")} > 
+                              {field.value ? format(field.value, "PPP") : <span>Pick a date</span>} 
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" /> 
+                            </Button> 
+                        </PopoverTrigger> 
+                        <PopoverContent className="w-auto p-0" align="start"> 
+                          <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /> 
+                        </PopoverContent> 
+                      </Popover> 
+                      <FormMessage /> 
+                    </FormItem> 
+                  )} />
                 </div>
                 <FormField control={form.control} name="notes" render={({ field }) => ( <FormItem> <FormLabel>Notes (Optional)</FormLabel> <FormControl><Textarea placeholder="Any specific notes about this item..." {...field} rows={2} /></FormControl> <FormMessage /> </FormItem> )} />
               </CardContent>
@@ -232,3 +248,4 @@ export default function PantryPage() {
     </div>
   );
 }
+
