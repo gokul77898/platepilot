@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/sidebar';
 import Logo from '@/components/icons/Logo';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, UtensilsCrossed, BookOpenText, ShoppingCart, Lightbulb, Settings, LogOut, PanelLeftOpen, PanelLeftClose, Archive, ScanSearch } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, BookOpenText, ShoppingCart, Lightbulb, Settings, LogOut, PanelLeftOpen, PanelLeftClose, Archive, ScanSearch, Brain } from 'lucide-react';
 import { Toaster } from "@/components/ui/toaster";
 import Chatbot from '@/components/chatbot/Chatbot'; // Import the Chatbot
 
@@ -35,8 +35,9 @@ const navItems: NavItem[] = [
   { href: '/recipes', label: 'Recipes', icon: BookOpenText },
   { href: '/shopping-list', label: 'Shopping List', icon: ShoppingCart },
   { href: '/pantry', label: 'Pantry', icon: Archive },
-  { href: '/smart-suggestions', label: 'Smart Suggestions', icon: Lightbulb },
   { href: '/meal-analyzer', label: 'Meal Analyzer', icon: ScanSearch },
+  { href: '/smart-suggestions', label: 'Smart Suggestions', icon: Lightbulb },
+  { href: '/ai-coach', label: 'AI Coach', icon: Brain },
 ];
 
 const MobileHeader = () => {
