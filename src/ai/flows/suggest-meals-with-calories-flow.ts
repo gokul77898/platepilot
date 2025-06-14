@@ -60,7 +60,7 @@ User Criteria:
 {{#if keywords}}Keywords: {{{keywords}}}{{/if}}
 {{#unless mealType}}{{#unless dietaryPreferences}}{{#unless keywords}}No specific criteria provided, suggest general healthy options.{{/unless}}{{/unless}}{{/unless}}
 
-Return the suggestions as a JSON array adhering to the output schema. Ensure calorie estimations are reasonable.
+Return the suggestions as a JSON array adhering to the output schema. If only one suggestion is found, it should still be within an array. Ensure calorie estimations are reasonable.
 Focus on common, recognizable meal names.
 
 Example Output:
