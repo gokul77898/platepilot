@@ -1,31 +1,31 @@
 
 
 export interface Ingredient {
-  id: string; // Added ID for potential key prop usage if ingredients become more dynamic
+  id: string; 
   name: string;
   quantity: string;
   unit?: string;
 }
 
 export interface NutritionalInfo {
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
+  calories?: number; // Made optional as not all recipes might have it initially
+  protein?: number;
+  carbs?: number;
+  fat?: number;
 }
 
 export interface Recipe {
   id: string;
   name: string;
   description?: string;
-  ingredients: Ingredient[]; // Changed from string to Ingredient[] for better structure
-  instructions: string[]; // Changed from string to string[]
+  ingredients: Ingredient[]; 
+  instructions: string[]; 
   prepTime: string; 
   cookTime: string; 
   servings: number;
   nutritionalInfo?: NutritionalInfo;
   imageUrl?: string;
-  tags?: string[]; // Changed from string to string[]
+  tags?: string[]; 
   createdAt?: string;
   updatedAt?: string;
 }
@@ -37,7 +37,6 @@ export interface Meal {
   recipeId: string; 
   dayOfWeek: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
   mealType: MealType;
-  // Optional: Store recipe name directly for quicker display, but recipeId is canonical
   recipeName?: string; 
 }
 
@@ -53,19 +52,15 @@ export interface MealPlan {
 
 export interface ShoppingListItem {
   id: string;
-  name: string; // Simplified from ingredientName
+  name: string; 
   quantity: string;
   unit?: string;
-  // recipeNames might be complex to maintain dynamically without a backend,
-  // For localStorage, keeping it simple or deriving it on the fly if needed.
-  // For now, let's remove recipeNames to simplify localStorage version.
-  // recipeNames?: string[]; 
   isBought: boolean;
   notes?: string;
   createdAt?: string;
 }
 
-// For AI recipe suggestions
+// For AI recipe (alternative) suggestions
 export interface SuggestedRecipe {
   name: string;
   ingredients: string; 
@@ -103,3 +98,17 @@ export interface PantryItem {
   notes?: string;
   createdAt?: string;
 }
+
+// For AI Meal Suggestion with Calories (New)
+export interface AiMealSuggestionInput {
+  mealType?: string;
+  dietaryPreferences?: string;
+  keywords?: string;
+}
+
+export interface AiMealSuggestion {
+  name: string;
+  description: string;
+  estimatedCalories: number | null;
+}
+export type AiMealSuggestionOutput = AiMealSuggestion[];

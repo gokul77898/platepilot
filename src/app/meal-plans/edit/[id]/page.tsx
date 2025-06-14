@@ -18,11 +18,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CalendarIcon, PlusCircle, Save, Trash2, Loader2 } from 'lucide-react';
-import type { Meal, MealPlan, MealType, Recipe } from '@/types';
+import { ArrowLeft, CalendarIcon, PlusCircle, Save, Trash2, Loader2, Lightbulb, Sparkles } from 'lucide-react';
+import type { Meal, MealPlan, MealType, Recipe, AiMealSuggestion, AiMealSuggestionInput } from '@/types';
 import { cn } from '@/lib/utils';
 import { loadFromLocalStorage, saveToLocalStorage, generateId } from '@/lib/localStorage';
+import { getAiMealSuggestions } from '../actions'; // Adjusted path
 
 const MEAL_PLANS_STORAGE_KEY = 'mealPlans';
 const RECIPES_STORAGE_KEY = 'recipes';
@@ -56,6 +58,17 @@ export default function EditMealPlanPage() {
   const [mealPlanToEdit, setMealPlanToEdit] = useState<MealPlan | null>(null);
   const [availableRecipes, setAvailableRecipes] = useState<Recipe[]>([]);
 
+  // AI Suggestion State
+  const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
+  const [aiMealType, setAiMealType] = useState<string>('');
+  const [aiDietaryPreferences, setAiDietaryPreferences] = useState<string>('');
+  const [aiKeywords, setAiKeywords] = useState<string>('');
+  const [aiSuggestions, setAiSuggestions] = useState<AiMealSuggestion[]>([]);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [selectedDayForAi, setSelectedDayForAi] = useState<Meal['dayOfWeek']>('Monday');
+  const [selectedMealTypeForAi, setSelectedMealTypeForAi] = useState<MealType>('breakfast');
+
+
   const planId = typeof params.id === 'string' ? params.id : undefined;
 
   const form = useForm<MealPlanFormValues>({
@@ -68,7 +81,7 @@ export default function EditMealPlanPage() {
     },
   });
   
-  const { fields, append, remove, replace } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "meals",
   });
@@ -101,6 +114,11 @@ export default function EditMealPlanPage() {
         router.push('/meal-plans');
       }
       setIsLoading(false);
+    } else {
+        // If no planId, it might be an error or unintended navigation.
+        // Redirect or show a message. For now, just stop loading.
+        setIsLoading(false);
+        router.push('/meal-plans'); // Or a dedicated error page/toast
     }
   }, [planId, form, router, toast]);
 
@@ -142,6 +160,71 @@ export default function EditMealPlanPage() {
     setIsSubmitting(false);
   };
 
+  const handleFetchAiSuggestions = async () => {
+    setIsAiLoading(true);
+    setAiSuggestions([]);
+    const input: AiMealSuggestionInput = {
+        mealType: aiMealType || selectedMealTypeForAi,
+        dietaryPreferences: aiDietaryPreferences,
+        keywords: aiKeywords,
+    };
+    const result = await getAiMealSuggestions(input);
+    setIsAiLoading(false);
+    if ('error' in result) {
+        toast({ variant: 'destructive', title: 'AI Suggestion Error', description: result.error });
+    } else {
+        setAiSuggestions(result);
+         if (result.length === 0) {
+            toast({ title: 'No Suggestions', description: 'The AI could not find any suggestions for your criteria. Try being more general.' });
+        }
+    }
+  };
+
+  const handleAddAiSuggestionToPlan = (suggestion: AiMealSuggestion) => {
+    const newRecipe: Recipe = {
+        id: generateId(),
+        name: suggestion.name,
+        description: suggestion.description || "AI-generated meal suggestion.",
+        ingredients: [], 
+        instructions: ["Details to be added by user."], 
+        prepTime: "N/A",
+        cookTime: "N/A",
+        servings: 1,
+        nutritionalInfo: { calories: suggestion.estimatedCalories ?? undefined },
+        imageUrl: `https://placehold.co/600x400.png?text=${encodeURIComponent(suggestion.name)}`,
+        tags: ["AI Suggested"],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    };
+
+    const updatedRecipes = [...availableRecipes, newRecipe];
+    setAvailableRecipes(updatedRecipes);
+    saveToLocalStorage(RECIPES_STORAGE_KEY, updatedRecipes);
+
+    append({
+        id: generateId(),
+        dayOfWeek: selectedDayForAi, 
+        mealType: selectedMealTypeForAi,
+        recipeId: newRecipe.id,
+        recipeName: newRecipe.name,
+    });
+
+    toast({ title: "Meal Added", description: `${suggestion.name} added to your plan for ${selectedDayForAi}, ${selectedMealTypeForAi}.` });
+    setIsAiDialogOpen(false); 
+    setAiSuggestions([]);
+  };
+
+  const openAiDialog = (day?: Meal['dayOfWeek'], mealType?: MealType) => {
+    setSelectedDayForAi(day || 'Monday');
+    setSelectedMealTypeForAi(mealType || 'breakfast');
+    setAiMealType(mealType || ''); 
+    setAiDietaryPreferences('');
+    setAiKeywords('');
+    setAiSuggestions([]);
+    setIsAiDialogOpen(true);
+  };
+
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -152,13 +235,15 @@ export default function EditMealPlanPage() {
   }
 
   if (!mealPlanToEdit) {
-    return <p>Meal plan not found.</p>;
+     // This case should ideally be handled by the redirect in useEffect,
+     // but as a fallback:
+    return <p>Meal plan not found or error loading.</p>;
   }
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title={`Edit Meal Plan: ${mealPlanToEdit.name}`}
+        title={`Edit Meal Plan: ${form.getValues('name') || mealPlanToEdit.name}`}
         description="Modify your meal plan details."
         actions={
           <Button variant="outline" asChild>
@@ -182,7 +267,15 @@ export default function EditMealPlanPage() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle>Meals</CardTitle></CardHeader>
+             <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Meals</CardTitle>
+                  <CardDescription>Manage meals in this plan.</CardDescription>
+                </div>
+                 <Button type="button" variant="outline" size="sm" onClick={() => openAiDialog()}> <Sparkles className="mr-2 h-4 w-4 text-accent" /> AI Suggest Meal </Button>
+              </div>
+            </CardHeader>
             <CardContent>
                {fields.length > 0 && (
                 <div className="space-y-4 mb-4">
@@ -193,6 +286,9 @@ export default function EditMealPlanPage() {
                         <FormField control={form.control} name={`meals.${index}.dayOfWeek`} render={({ field: dayField }) => ( <FormItem> <FormLabel>Day</FormLabel> <Select onValueChange={dayField.onChange} defaultValue={dayField.value}> <FormControl><SelectTrigger><SelectValue placeholder="Select day" /></SelectTrigger></FormControl> <SelectContent> {daysOfWeek.map(day => <SelectItem key={day} value={day}>{day}</SelectItem>)} </SelectContent> </Select> <FormMessage /> </FormItem> )} />
                         <FormField control={form.control} name={`meals.${index}.mealType`} render={({ field: typeField }) => ( <FormItem> <FormLabel>Meal Type</FormLabel> <Select onValueChange={typeField.onChange} defaultValue={typeField.value}> <FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl> <SelectContent> {mealTypes.map(type => <SelectItem key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</SelectItem>)} </SelectContent> </Select> <FormMessage /> </FormItem> )} />
                         <FormField control={form.control} name={`meals.${index}.recipeId`} render={({ field: recipeField }) => ( <FormItem> <FormLabel>Recipe</FormLabel> <Select onValueChange={recipeField.onChange} defaultValue={recipeField.value}> <FormControl><SelectTrigger><SelectValue placeholder="Select recipe" /></SelectTrigger></FormControl> <SelectContent> {availableRecipes.length > 0 ? availableRecipes.map(recipe => <SelectItem key={recipe.id} value={recipe.id}>{recipe.name}</SelectItem>) : <SelectItem value="" disabled>No recipes available</SelectItem>} </SelectContent> </Select> <FormMessage /> </FormItem> )} />
+                      </div>
+                       <div className="mt-2 text-right">
+                        <Button type="button" variant="link" size="sm" className="text-accent hover:text-accent/80" onClick={() => openAiDialog(form.getValues(`meals.${index}.dayOfWeek`), form.getValues(`meals.${index}.mealType`))}> <Sparkles className="mr-1 h-3 w-3" /> AI idea for this slot </Button>
                       </div>
                     </Card>
                   ))}
@@ -206,6 +302,62 @@ export default function EditMealPlanPage() {
           </Card>
         </form>
       </Form>
+
+      <Dialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>AI Meal Suggestions</DialogTitle>
+            <DialogDescription>
+              Let AI suggest meals for {selectedDayForAi}, {selectedMealTypeForAi}. Fill in optional preferences.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <FormItem>
+              <FormLabel>Target Meal Type (optional)</FormLabel>
+              <Select value={aiMealType} onValueChange={setAiMealType}>
+                <SelectTrigger><SelectValue placeholder="Any Meal Type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Any</SelectItem>
+                  {mealTypes.map(type => <SelectItem key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </FormItem>
+            <FormItem>
+              <FormLabel>Dietary Preferences (optional)</FormLabel>
+              <Input placeholder="e.g., vegetarian, gluten-free, low-carb" value={aiDietaryPreferences} onChange={(e) => setAiDietaryPreferences(e.target.value)} />
+            </FormItem>
+            <FormItem>
+              <FormLabel>Keywords (optional)</FormLabel>
+              <Input placeholder="e.g., quick, healthy, high-protein" value={aiKeywords} onChange={(e) => setAiKeywords(e.target.value)} />
+            </FormItem>
+          </div>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button type="button" variant="outline" onClick={() => setIsAiDialogOpen(false)}>Cancel</Button>
+            <Button type="button" onClick={handleFetchAiSuggestions} disabled={isAiLoading} className="bg-accent text-accent-foreground hover:bg-accent/90">
+              {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lightbulb className="mr-2 h-4 w-4" />} Get Suggestions
+            </Button>
+          </DialogFooter>
+
+          {aiSuggestions.length > 0 && (
+            <div className="mt-6 max-h-60 overflow-y-auto space-y-3 pr-2">
+              <h4 className="font-semibold text-md mb-2">Suggestions:</h4>
+              {aiSuggestions.map((suggestion, index) => (
+                <Card key={index} className="p-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-base">{suggestion.name}</CardTitle>
+                      <CardDescription className="text-xs">{suggestion.description}</CardDescription>
+                      {suggestion.estimatedCalories && <p className="text-xs text-primary font-medium mt-1">{suggestion.estimatedCalories} kcal (est.)</p>}
+                    </div>
+                    <Button type="button" size="sm" onClick={() => handleAddAiSuggestionToPlan(suggestion)} className="ml-2 shrink-0">Add</Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+           {isAiLoading && <div className="text-center p-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /> <p className="text-sm text-muted-foreground">AI is thinking...</p></div>}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
