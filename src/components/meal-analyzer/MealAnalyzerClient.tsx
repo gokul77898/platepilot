@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { FormItem, FormLabel } from '@/components/ui/form'; // Only FormItem and FormLabel needed here
+import { Label } from '@/components/ui/label'; // Changed from FormLabel
 import { analyzeUploadedMealImage } from '@/app/smart-suggestions/actions';
 import type { AnalyzeMealImageOutput } from '@/types';
 import { Loader2, Camera, CheckCircle, XCircle, Activity, Info } from 'lucide-react';
@@ -70,15 +70,15 @@ export default function MealAnalyzerClient() {
           <CardDescription>For best results, use a clear image of the food. The AI will try to identify it and provide insights.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <FormItem>
-            <FormLabel htmlFor="meal-image-upload">Meal Image</FormLabel>
+          <div className="space-y-2"> {/* Replaced FormItem with div */}
+            <Label htmlFor="meal-image-upload">Meal Image</Label> {/* Replaced FormLabel with Label */}
             <Input id="meal-image-upload" type="file" accept="image/*" onChange={handleImageFileChange} className="border p-2 rounded-md file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"/>
             {mealImageDataUri && (
                 <div className="mt-4 border rounded-md p-2 inline-block shadow-sm">
                      <Image src={mealImageDataUri} alt="Meal preview" width={200} height={200} className="rounded-md object-cover aspect-square" data-ai-hint="food meal" />
                 </div>
             )}
-          </FormItem>
+          </div>
         </CardContent>
         <CardFooter>
           <Button onClick={onAnalyzeImageSubmit} disabled={isAnalyzingImage || !mealImageDataUri} className="w-full md:w-auto bg-primary text-primary-foreground hover:bg-primary/90">
