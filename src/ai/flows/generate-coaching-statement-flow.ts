@@ -1,11 +1,11 @@
 
 'use server';
 /**
- * @fileOverview Generates a personalized coaching statement based on user goals.
+ * @fileOverview Generates a personalized coaching statement or tip based on user goals.
  *
- * - generateCoachingStatement - Function to get a coaching statement.
+ * - generateCoachingStatement - Function to get a coaching statement/tip.
  * - GenerateCoachingStatementInput - Input type (user's goals).
- * - GenerateCoachingStatementOutput - Output type (the AI's statement).
+ * - GenerateCoachingStatementOutput - Output type (the AI's statement/tip).
  */
 
 import {ai} from '@/ai/genkit';
@@ -19,7 +19,7 @@ const GenerateCoachingStatementInputSchema = z.object({
 export type GenerateCoachingStatementInput = z.infer<typeof GenerateCoachingStatementInputSchema>;
 
 const GenerateCoachingStatementOutputSchema = z.object({
-  statement: z.string().describe("A brief (2-3 sentences), encouraging, and actionable introductory coaching statement tailored to the user's input."),
+  statement: z.string().describe("A brief (2-3 sentences), encouraging, insightful, and actionable coaching statement or tip tailored to the user's input."),
 });
 export type GenerateCoachingStatementOutput = z.infer<typeof GenerateCoachingStatementOutputSchema>;
 
@@ -31,19 +31,20 @@ const prompt = ai.definePrompt({
   name: 'generateCoachingStatementPrompt',
   input: {schema: GenerateCoachingStatementInputSchema},
   output: {schema: GenerateCoachingStatementOutputSchema},
-  prompt: `You are PlatePilot AI, a friendly, encouraging, and insightful health coach.
-A user has shared their goals and challenges with you. Your task is to provide a brief (2-3 sentences max) introductory coaching statement.
-This statement should:
-1. Acknowledge their primary goal.
-2. Briefly touch upon their preferences or challenges in an empathetic way.
-3. Offer a piece of general, actionable advice or encouragement related to their input.
-4. Maintain a positive and supportive tone.
+  prompt: `You are PlatePilot AI, a supportive and insightful health coach.
+A user has shared their health goals, dietary notes, and challenges.
+Based on this, provide a concise (2-3 sentences), personalized coaching tip.
+Your tip should:
+1. Be directly relevant to their stated '{{{primaryGoal}}}', '{{{dietaryPreferences}}}', or '{{{challenges}}}'.
+2. Offer specific, actionable advice or an insightful perspective. Avoid generic statements and aim for practical takeaways.
+3. Maintain an encouraging and empathetic tone.
+4. If this is a subsequent tip for the user, try to offer a fresh or unique angle if possible.
 
 User's Primary Goal: {{{primaryGoal}}}
 User's Dietary Preferences/Notes: {{{dietaryPreferences}}}
 User's Challenges: {{{challenges}}}
 
-Your coaching statement:`,
+Your personalized coaching tip:`,
   config: {
     safetySettings: [
       {
@@ -63,8 +64,9 @@ const generateCoachingStatementFlow = ai.defineFlow(
   async (input) => {
     const {output} = await prompt(input);
     if (!output) {
-      return { statement: "I'm ready to help you on your journey! Let's work together to achieve your goals." };
+      return { statement: "I'm ready to help you on your journey! Let's work together to achieve your goals. Consider one small positive change you can make today." };
     }
     return output;
   }
 );
+
