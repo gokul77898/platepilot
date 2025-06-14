@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/sidebar';
 import Logo from '@/components/icons/Logo';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, UtensilsCrossed, BookOpenText, ShoppingCart, Lightbulb, Settings, LogOut, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, BookOpenText, ShoppingCart, Lightbulb, Settings, LogOut, PanelLeftOpen, PanelLeftClose, Archive } from 'lucide-react';
 import { Toaster } from "@/components/ui/toaster";
 
 interface NavItem {
@@ -33,6 +33,7 @@ const navItems: NavItem[] = [
   { href: '/meal-plans', label: 'Meal Plans', icon: UtensilsCrossed },
   { href: '/recipes', label: 'Recipes', icon: BookOpenText },
   { href: '/shopping-list', label: 'Shopping List', icon: ShoppingCart },
+  { href: '/pantry', label: 'Pantry', icon: Archive },
   { href: '/smart-suggestions', label: 'Smart Suggestions', icon: Lightbulb },
 ];
 
