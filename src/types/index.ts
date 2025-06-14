@@ -28,6 +28,7 @@ export interface Recipe {
   tags?: string[]; 
   createdAt?: string;
   updatedAt?: string;
+  dataAiHint?: string; // Added for dashboard image consistency
 }
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
@@ -104,6 +105,7 @@ export interface AiMealSuggestionInput {
   mealType?: string;
   dietaryPreferences?: string;
   keywords?: string;
+  healthGoals?: string; // Added health goals
 }
 
 export interface AiSuggestedIngredient {
@@ -128,4 +130,3 @@ export interface ChatMessage {
   sender: 'user' | 'bot';
   timestamp: Date;
 }
-

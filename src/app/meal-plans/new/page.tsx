@@ -21,7 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CalendarIcon, PlusCircle, Save, Trash2, Loader2, Lightbulb, Sparkles, CheckSquare, Square } from 'lucide-react';
+import { ArrowLeft, CalendarIcon, PlusCircle, Save, Trash2, Loader2, Lightbulb, Sparkles } from 'lucide-react';
 import type { Meal, MealPlan, MealType, Recipe, AiMealSuggestion, AiMealSuggestionInput, Ingredient as RecipeIngredient } from '@/types';
 import { cn } from '@/lib/utils';
 import { loadFromLocalStorage, saveToLocalStorage, generateId } from '@/lib/localStorage';
@@ -66,6 +66,7 @@ export default function NewMealPlanPage() {
   const [aiMealType, setAiMealType] = useState<string>('');
   const [aiDietaryPreferences, setAiDietaryPreferences] = useState<string>('');
   const [aiKeywords, setAiKeywords] = useState<string>('');
+  const [aiHealthGoals, setAiHealthGoals] = useState<string>(''); // New state for health goals
   const [aiSuggestions, setAiSuggestions] = useState<AiMealSuggestion[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [selectedDayForAi, setSelectedDayForAi] = useState<Meal['dayOfWeek']>('Monday');
@@ -127,16 +128,17 @@ export default function NewMealPlanPage() {
     setIsAiLoading(true);
     setAiSuggestions([]);
     const input: AiMealSuggestionInput = {
-        mealType: aiMealType || undefined, 
+        mealType: aiMealType === AI_SUGGESTION_ANY_MEAL_TYPE_VALUE ? undefined : aiMealType || undefined,
         dietaryPreferences: aiDietaryPreferences,
         keywords: aiKeywords,
+        healthGoals: aiHealthGoals, // Pass health goals
     };
     const result = await getAiMealSuggestions(input);
     setIsAiLoading(false);
     if ('error' in result) {
         toast({ variant: 'destructive', title: 'AI Suggestion Error', description: result.error });
     } else {
-        setAiSuggestions(result);
+        setAiSuggestions(Array.isArray(result) ? result : [result]); // Ensure result is an array
         if (result.length === 0) {
             toast({ title: 'No Suggestions', description: 'The AI could not find any suggestions for your criteria. Try being more general.' });
         }
@@ -147,7 +149,7 @@ export default function NewMealPlanPage() {
     const recipeIngredients: RecipeIngredient[] = suggestion.ingredients.map(ing => ({
       id: generateId(),
       name: ing.name,
-      quantity: ing.quantity || "N/A", // Default if AI doesn't provide
+      quantity: ing.quantity || "N/A", 
       unit: ing.unit || "",
     }));
 
@@ -157,9 +159,9 @@ export default function NewMealPlanPage() {
         description: suggestion.description || "AI-generated meal suggestion.",
         ingredients: recipeIngredients, 
         instructions: ["Details to be added by user."], 
-        prepTime: "N/A", // User can fill this in later
-        cookTime: "N/A", // User can fill this in later
-        servings: 1, // Default, user can adjust
+        prepTime: "N/A", 
+        cookTime: "N/A", 
+        servings: 1, 
         nutritionalInfo: { calories: suggestion.estimatedCalories ?? undefined },
         imageUrl: `https://placehold.co/600x400.png?text=${encodeURIComponent(suggestion.name)}`,
         dataAiHint: "food meal",
@@ -191,6 +193,7 @@ export default function NewMealPlanPage() {
     setAiMealType(mealType || ''); 
     setAiDietaryPreferences('');
     setAiKeywords('');
+    setAiHealthGoals(''); // Reset health goals
     setAiSuggestions([]);
     setIsAiDialogOpen(true);
   };
@@ -291,27 +294,33 @@ export default function NewMealPlanPage() {
               Let AI suggest meals for {selectedDayForAi}, {selectedMealTypeForAi}. Fill in optional preferences.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="ai-meal-type">Target Meal Type (optional)</Label>
-              <Select
-                value={aiMealType === '' ? AI_SUGGESTION_ANY_MEAL_TYPE_VALUE : aiMealType}
-                onValueChange={(value) => {
-                  setAiMealType(value === AI_SUGGESTION_ANY_MEAL_TYPE_VALUE ? '' : value);
-                }}
-              >
-                <SelectTrigger id="ai-meal-type"><SelectValue placeholder="Any Meal Type" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={AI_SUGGESTION_ANY_MEAL_TYPE_VALUE}>Any</SelectItem>
-                  {mealTypes.map(type => <SelectItem key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</SelectItem>)}
-                </SelectContent>
-              </Select>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="ai-meal-type">Target Meal Type (optional)</Label>
+                  <Select
+                    value={aiMealType === '' ? AI_SUGGESTION_ANY_MEAL_TYPE_VALUE : aiMealType}
+                    onValueChange={(value) => {
+                      setAiMealType(value === AI_SUGGESTION_ANY_MEAL_TYPE_VALUE ? '' : value);
+                    }}
+                  >
+                    <SelectTrigger id="ai-meal-type"><SelectValue placeholder="Any Meal Type" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={AI_SUGGESTION_ANY_MEAL_TYPE_VALUE}>Any</SelectItem>
+                      {mealTypes.map(type => <SelectItem key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ai-keywords">Keywords (optional)</Label>
+                  <Input id="ai-keywords" placeholder="e.g., quick, healthy, high-protein" value={aiKeywords} onChange={(e) => setAiKeywords(e.target.value)} />
+                </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ai-keywords">Keywords (optional)</Label>
-              <Input id="ai-keywords" placeholder="e.g., quick, healthy, high-protein" value={aiKeywords} onChange={(e) => setAiKeywords(e.target.value)} />
+              <Label htmlFor="ai-health-goals">Health Goals (optional)</Label>
+              <Input id="ai-health-goals" placeholder="e.g., weight loss, muscle gain, low-sodium" value={aiHealthGoals} onChange={(e) => setAiHealthGoals(e.target.value)} />
             </div>
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2">
               <Label htmlFor="ai-dietary-pref">Dietary Preferences (optional)</Label>
               <Input id="ai-dietary-pref" placeholder="e.g., vegetarian, gluten-free, low-carb" value={aiDietaryPreferences} onChange={(e) => setAiDietaryPreferences(e.target.value)} />
             </div>
@@ -324,7 +333,7 @@ export default function NewMealPlanPage() {
           </DialogFooter>
 
           {aiSuggestions.length > 0 && (
-            <ScrollArea className="mt-6 max-h-[calc(100vh-400px)] md:max-h-96 overflow-y-auto pr-2">
+            <ScrollArea className="mt-6 max-h-[calc(100vh-450px)] md:max-h-80 lg:max-h-96 overflow-y-auto pr-2">
               <h4 className="font-semibold text-md mb-3 sticky top-0 bg-background py-2 z-10">AI Suggestions:</h4>
               <div className="space-y-4">
                 {aiSuggestions.map((suggestion, index) => (
@@ -333,7 +342,7 @@ export default function NewMealPlanPage() {
                       <CardTitle className="text-lg font-headline">{suggestion.name}</CardTitle>
                       <Button type="button" size="sm" onClick={() => handleAddAiSuggestionToPlan(suggestion)} className="ml-2 shrink-0">Add to Plan</Button>
                     </div>
-                    <CardDescription className="text-sm mb-3">{suggestion.description}</CardDescription>
+                    <CardDescription className="text-sm mb-3 whitespace-pre-line">{suggestion.description}</CardDescription>
                     
                     {suggestion.ingredients && suggestion.ingredients.length > 0 && (
                       <div className="mb-3">

@@ -68,6 +68,7 @@ export default function EditMealPlanPage() {
   const [aiMealType, setAiMealType] = useState<string>('');
   const [aiDietaryPreferences, setAiDietaryPreferences] = useState<string>('');
   const [aiKeywords, setAiKeywords] = useState<string>('');
+  const [aiHealthGoals, setAiHealthGoals] = useState<string>(''); // New state for health goals
   const [aiSuggestions, setAiSuggestions] = useState<AiMealSuggestion[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [selectedDayForAi, setSelectedDayForAi] = useState<Meal['dayOfWeek']>('Monday');
@@ -121,8 +122,6 @@ export default function EditMealPlanPage() {
       setIsLoading(false);
     } else {
         setIsLoading(false);
-        // This case should ideally not happen if routing is correct,
-        // but as a fallback, send to meal plans list.
         router.push('/meal-plans'); 
     }
   }, [planId, form, router, toast]);
@@ -169,16 +168,17 @@ export default function EditMealPlanPage() {
     setIsAiLoading(true);
     setAiSuggestions([]);
     const input: AiMealSuggestionInput = {
-        mealType: aiMealType || undefined,
+        mealType: aiMealType === AI_SUGGESTION_ANY_MEAL_TYPE_VALUE ? undefined : aiMealType || undefined,
         dietaryPreferences: aiDietaryPreferences,
         keywords: aiKeywords,
+        healthGoals: aiHealthGoals, // Pass health goals
     };
     const result = await getAiMealSuggestions(input);
     setIsAiLoading(false);
     if ('error' in result) {
         toast({ variant: 'destructive', title: 'AI Suggestion Error', description: result.error });
     } else {
-        setAiSuggestions(result);
+        setAiSuggestions(Array.isArray(result) ? result : [result]); // Ensure result is an array
          if (result.length === 0) {
             toast({ title: 'No Suggestions', description: 'The AI could not find any suggestions for your criteria. Try being more general.' });
         }
@@ -233,6 +233,7 @@ export default function EditMealPlanPage() {
     setAiMealType(mealType || ''); 
     setAiDietaryPreferences('');
     setAiKeywords('');
+    setAiHealthGoals(''); // Reset health goals
     setAiSuggestions([]);
     setIsAiDialogOpen(true);
   };
@@ -248,7 +249,6 @@ export default function EditMealPlanPage() {
   }
 
   if (!mealPlanToEdit) {
-    // This state should ideally be caught by the useEffect redirect, but it's a safe fallback.
     return <p>Meal plan not found or error loading.</p>;
   }
 
@@ -345,27 +345,33 @@ export default function EditMealPlanPage() {
               Let AI suggest meals for {selectedDayForAi}, {selectedMealTypeForAi}. Fill in optional preferences.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="ai-meal-type-edit">Target Meal Type (optional)</Label>
+                <Select
+                  value={aiMealType === '' ? AI_SUGGESTION_ANY_MEAL_TYPE_VALUE : aiMealType}
+                  onValueChange={(value) => {
+                    setAiMealType(value === AI_SUGGESTION_ANY_MEAL_TYPE_VALUE ? '' : value);
+                  }}
+                >
+                  <SelectTrigger id="ai-meal-type-edit"><SelectValue placeholder="Any Meal Type" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={AI_SUGGESTION_ANY_MEAL_TYPE_VALUE}>Any</SelectItem>
+                    {mealTypes.map(type => <SelectItem key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+               <div className="space-y-2">
+                <Label htmlFor="ai-keywords-edit">Keywords (optional)</Label>
+                <Input id="ai-keywords-edit" placeholder="e.g., quick, healthy, high-protein" value={aiKeywords} onChange={(e) => setAiKeywords(e.target.value)} />
+              </div>
+            </div>
             <div className="space-y-2">
-              <Label htmlFor="ai-meal-type-edit">Target Meal Type (optional)</Label>
-              <Select
-                value={aiMealType === '' ? AI_SUGGESTION_ANY_MEAL_TYPE_VALUE : aiMealType}
-                onValueChange={(value) => {
-                  setAiMealType(value === AI_SUGGESTION_ANY_MEAL_TYPE_VALUE ? '' : value);
-                }}
-              >
-                <SelectTrigger id="ai-meal-type-edit"><SelectValue placeholder="Any Meal Type" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={AI_SUGGESTION_ANY_MEAL_TYPE_VALUE}>Any</SelectItem>
-                  {mealTypes.map(type => <SelectItem key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="ai-health-goals-edit">Health Goals (optional)</Label>
+              <Input id="ai-health-goals-edit" placeholder="e.g., weight loss, muscle gain, low-sodium" value={aiHealthGoals} onChange={(e) => setAiHealthGoals(e.target.value)} />
             </div>
-             <div className="space-y-2">
-              <Label htmlFor="ai-keywords-edit">Keywords (optional)</Label>
-              <Input id="ai-keywords-edit" placeholder="e.g., quick, healthy, high-protein" value={aiKeywords} onChange={(e) => setAiKeywords(e.target.value)} />
-            </div>
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2">
               <Label htmlFor="ai-dietary-pref-edit">Dietary Preferences (optional)</Label>
               <Input id="ai-dietary-pref-edit" placeholder="e.g., vegetarian, gluten-free, low-carb" value={aiDietaryPreferences} onChange={(e) => setAiDietaryPreferences(e.target.value)} />
             </div>
@@ -378,7 +384,7 @@ export default function EditMealPlanPage() {
           </DialogFooter>
 
           {aiSuggestions.length > 0 && (
-             <ScrollArea className="mt-6 max-h-[calc(100vh-400px)] md:max-h-96 overflow-y-auto pr-2">
+             <ScrollArea className="mt-6 max-h-[calc(100vh-450px)] md:max-h-80 lg:max-h-96 overflow-y-auto pr-2">
                <h4 className="font-semibold text-md mb-3 sticky top-0 bg-background py-2 z-10">AI Suggestions:</h4>
               <div className="space-y-4">
                 {aiSuggestions.map((suggestion, index) => (
@@ -387,7 +393,7 @@ export default function EditMealPlanPage() {
                       <CardTitle className="text-lg font-headline">{suggestion.name}</CardTitle>
                       <Button type="button" size="sm" onClick={() => handleAddAiSuggestionToPlan(suggestion)} className="ml-2 shrink-0">Add to Plan</Button>
                     </div>
-                    <CardDescription className="text-sm mb-3">{suggestion.description}</CardDescription>
+                    <CardDescription className="text-sm mb-3 whitespace-pre-line">{suggestion.description}</CardDescription>
                     
                     {suggestion.ingredients && suggestion.ingredients.length > 0 && (
                        <div className="mb-3">
