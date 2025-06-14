@@ -38,7 +38,7 @@ const prompt = ai.definePrompt({
   name: 'suggestMealsWithCaloriesPrompt',
   input: {schema: AiMealSuggestionInputSchema},
   output: {schema: AiMealSuggestionOutputSchema},
-  prompt: `You are a helpful meal planning assistant. Generate 3-5 meal suggestions based on the user's criteria. For each meal, provide a name, a brief 1-2 sentence description, and an estimated calorie count for a typical single serving.
+  prompt: `You are a helpful meal planning assistant. Generate 1-3 meal suggestions based on the user's criteria. For each meal, provide a name, a brief 1-2 sentence description, and an estimated calorie count for a typical single serving.
 
 User Criteria:
 {{#if mealType}}Meal Type: {{{mealType}}}{{/if}}
