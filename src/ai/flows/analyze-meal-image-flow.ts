@@ -11,7 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const AnalyzeMealImageInputSchema = z.object({
+const AnalyzeMealImageInputSchema = z.object({
   imageDataUri: z
     .string()
     .describe(
@@ -20,7 +20,7 @@ export const AnalyzeMealImageInputSchema = z.object({
 });
 export type AnalyzeMealImageInput = z.infer<typeof AnalyzeMealImageInputSchema>;
 
-export const AnalyzeMealImageOutputSchema = z.object({
+const AnalyzeMealImageOutputSchema = z.object({
   identifiedDish: z.string().describe("The name of the dish identified in the image, if possible. E.g., 'Spaghetti Carbonara', 'Chicken Salad'."),
   estimatedCalories: z.number().nullable().describe("Estimated calories in the meal. Null if unable to estimate."),
   isHealthy: z.boolean().describe("Whether the meal is generally considered healthy."),
@@ -68,3 +68,4 @@ const analyzeMealImageFlow = ai.defineFlow(
     return output;
   }
 );
+
