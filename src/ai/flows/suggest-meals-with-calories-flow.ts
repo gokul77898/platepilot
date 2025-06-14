@@ -4,26 +4,26 @@
  * @fileOverview Suggests meals with estimated calories based on user preferences.
  *
  * - suggestMealsWithCalories - A function that handles meal suggestions.
- * - AiMealSuggestionInputSchema - The input type for the function.
- * - AiMealSuggestionOutputSchema - The return type for the function.
+ * - AiMealSuggestionInput - The input type for the function.
+ * - AiMealSuggestionOutput - The return type for the function.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const AiMealSuggestionInputSchema = z.object({
+const AiMealSuggestionInputSchema = z.object({
   mealType: z.string().optional().describe("The type of meal (e.g., breakfast, lunch, dinner, snack)."),
   dietaryPreferences: z.string().optional().describe("Any dietary restrictions or preferences (e.g., vegetarian, gluten-free, low-carb)."),
   keywords: z.string().optional().describe("General keywords for the meal (e.g., quick, healthy, high-protein, comfort food)."),
 });
 
-export const AiMealSuggestionSchema = z.object({
+const AiMealSuggestionSchema = z.object({
   name: z.string().describe("The name of the suggested meal."),
   description: z.string().describe("A brief description of the meal (1-2 sentences)."),
   estimatedCalories: z.number().nullable().describe("The estimated calorie count for one serving of the meal. Provide null if unable to estimate reliably."),
 });
 
-export const AiMealSuggestionOutputSchema = z.array(AiMealSuggestionSchema);
+const AiMealSuggestionOutputSchema = z.array(AiMealSuggestionSchema);
 
 export type AiMealSuggestionInput = z.infer<typeof AiMealSuggestionInputSchema>;
 export type AiMealSuggestion = z.infer<typeof AiMealSuggestionSchema>;
@@ -78,3 +78,4 @@ const suggestMealsWithCaloriesFlow = ai.defineFlow(
     return output;
   }
 );
+
