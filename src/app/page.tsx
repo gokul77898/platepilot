@@ -8,18 +8,30 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Utensils, ListChecks, CalendarDays, PlusCircle, Lightbulb, Loader2 } from 'lucide-react';
-import type { MealPlan, Recipe, ShoppingListItem } from '@/types';
+import type { MealPlan, Recipe, ShoppingListItem, MealType } from '@/types';
 import { loadFromLocalStorage } from '@/lib/localStorage';
-import { format, parseISO, isFuture, isToday, differenceInDays, addDays } from 'date-fns';
+import { format, parseISO, isFuture, isToday, differenceInDays, addDays, startOfDay } from 'date-fns';
 
 const MEAL_PLANS_STORAGE_KEY = 'mealPlans';
 const RECIPES_STORAGE_KEY = 'recipes';
 const SHOPPING_LIST_STORAGE_KEY = 'shoppingList';
 
-interface UpcomingMeal {
+interface UpcomingMealDisplay {
   id: string;
   name: string;
-  time: string;
+  time: string; // Formatted for display
+  imageUrl?: string;
+  dataAiHint?: string;
+  recipeId: string;
+  mealPlanId: string;
+}
+
+// Intermediate structure for processing and sorting
+interface ProcessedUpcomingMeal {
+  id: string;
+  name: string;
+  actualDate: Date;
+  mealType: MealType;
   imageUrl?: string;
   dataAiHint?: string;
   recipeId: string;
@@ -27,7 +39,7 @@ interface UpcomingMeal {
 }
 
 export default function DashboardPage() {
-  const [upcomingMeals, setUpcomingMeals] = useState<UpcomingMeal[]>([]);
+  const [upcomingMeals, setUpcomingMeals] = useState<UpcomingMealDisplay[]>([]);
   const [shoppingListSummary, setShoppingListSummary] = useState<{ itemsDue: number; categories: { name: string; count: number }[] }>({ itemsDue: 0, categories: [] });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -38,31 +50,28 @@ export default function DashboardPage() {
     const storedShoppingList = loadFromLocalStorage<ShoppingListItem[]>(SHOPPING_LIST_STORAGE_KEY, []);
 
     // Process upcoming meals
-    const today = new Date();
-    today.setHours(0,0,0,0); // normalize today to start of day
-    const nextThreeDaysMeals: UpcomingMeal[] = [];
+    const today = startOfDay(new Date()); // Normalize today to start of day
+
+    const allPotentialUpcomingMeals: ProcessedUpcomingMeal[] = [];
 
     storedMealPlans.forEach(plan => {
       const planStartDate = parseISO(plan.weekStartDate);
       plan.meals.forEach(meal => {
         let mealDate: Date | null = null;
         const dayOffset = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].indexOf(meal.dayOfWeek);
+        
         if (dayOffset !== -1) {
-            mealDate = addDays(planStartDate, dayOffset);
+            mealDate = startOfDay(addDays(planStartDate, dayOffset));
         }
 
         if (mealDate && (isToday(mealDate) || (isFuture(mealDate) && differenceInDays(mealDate, today) <= 2))) {
           const recipe = storedRecipes.find(r => r.id === meal.recipeId);
           if (recipe) {
-            let timeString = format(mealDate, 'EEEE, MMM d');
-            if (isToday(mealDate)) timeString = `Today, ${meal.mealType}`;
-            else if (differenceInDays(mealDate, today) === 1) timeString = `Tomorrow, ${meal.mealType}`;
-            else timeString = `${format(mealDate, 'EEEE')}, ${meal.mealType}`;
-            
-            nextThreeDaysMeals.push({
+            allPotentialUpcomingMeals.push({
               id: `${plan.id}-${meal.id}`,
               name: recipe.name,
-              time: timeString,
+              actualDate: mealDate,
+              mealType: meal.mealType,
               imageUrl: recipe.imageUrl || 'https://placehold.co/100x100.png',
               dataAiHint: recipe.tags && recipe.tags.length > 0 ? recipe.tags[0] : 'food',
               recipeId: recipe.id,
@@ -74,26 +83,43 @@ export default function DashboardPage() {
     });
     
     // Sort meals chronologically and by typical meal type order
-    const mealTypeOrder: Record<string, number> = { 'breakfast': 1, 'lunch': 2, 'dinner': 3, 'snack': 4 };
-    nextThreeDaysMeals.sort((a, b) => {
-        const dateA = parseISO(a.time.split(', ')[0] === 'Today' ? format(today, 'yyyy-MM-dd') : a.time.split(', ')[0] === 'Tomorrow' ? format(addDays(today,1), 'yyyy-MM-dd') : a.time.split(', ')[0] ); // This is not robust for actual date sorting
-        const dateB = parseISO(b.time.split(', ')[0] === 'Today' ? format(today, 'yyyy-MM-dd') : b.time.split(', ')[0] === 'Tomorrow' ? format(addDays(today,1), 'yyyy-MM-dd') : b.time.split(', ')[0] );
-        if(dateA.getTime() !== dateB.getTime()) return dateA.getTime() - dateB.getTime();
-        
-        const typeA = a.time.split(', ')[1]?.toLowerCase() || '';
-        const typeB = b.time.split(', ')[1]?.toLowerCase() || '';
-        return (mealTypeOrder[typeA] || 5) - (mealTypeOrder[typeB] || 5);
+    const mealTypeOrder: Record<MealType, number> = { 'breakfast': 1, 'lunch': 2, 'dinner': 3, 'snack': 4 };
+    
+    allPotentialUpcomingMeals.sort((a, b) => {
+        if (a.actualDate.getTime() !== b.actualDate.getTime()) {
+            return a.actualDate.getTime() - b.actualDate.getTime();
+        }
+        return (mealTypeOrder[a.mealType] || 5) - (mealTypeOrder[b.mealType] || 5);
     });
 
-    setUpcomingMeals(nextThreeDaysMeals.slice(0, 5)); // Show top 5 upcoming
+    // Format for display and take top 5
+    const formattedUpcomingMeals = allPotentialUpcomingMeals.slice(0, 5).map(meal => {
+        let timeString: string;
+        if (isToday(meal.actualDate)) {
+            timeString = `Today, ${meal.mealType.charAt(0).toUpperCase() + meal.mealType.slice(1)}`;
+        } else if (differenceInDays(meal.actualDate, today) === 1) {
+            timeString = `Tomorrow, ${meal.mealType.charAt(0).toUpperCase() + meal.mealType.slice(1)}`;
+        } else {
+            timeString = `${format(meal.actualDate, 'EEEE, MMM d')}, ${meal.mealType.charAt(0).toUpperCase() + meal.mealType.slice(1)}`;
+        }
+        return {
+            id: meal.id,
+            name: meal.name,
+            time: timeString,
+            imageUrl: meal.imageUrl,
+            dataAiHint: meal.dataAiHint,
+            recipeId: meal.recipeId,
+            mealPlanId: meal.mealPlanId,
+        };
+    });
+
+    setUpcomingMeals(formattedUpcomingMeals);
 
     // Process shopping list summary
     const activeShoppingItems = storedShoppingList.filter(item => !item.isBought);
-    // For simplicity, categories won't be dynamically generated here from items yet.
-    // This could be enhanced later if PantryItems have categories.
     setShoppingListSummary({
       itemsDue: activeShoppingItems.length,
-      categories: [ // Static categories for now
+      categories: [
         { name: 'Total Items', count: activeShoppingItems.length },
       ]
     });
