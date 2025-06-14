@@ -1,10 +1,12 @@
+
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import type { MealPlan } from '@/types';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import type { MealPlan, Recipe } from '@/types'; // Added Recipe type
 import Link from 'next/link';
-import { PlusCircle, Edit3, Trash2, CalendarDays } from 'lucide-react';
+import { PlusCircle, Edit3, Trash2, CalendarDays, Lightbulb, Utensils } from 'lucide-react';
 import Image from 'next/image';
+import { Badge } from '@/components/ui/badge';
 
 // Mock data for Meal Plans
 const mockMealPlans: MealPlan[] = [
@@ -16,6 +18,7 @@ const mockMealPlans: MealPlan[] = [
     meals: [
       { id: 'm1', recipeId: 'r1', dayOfWeek: 'Monday', mealType: 'breakfast' },
       { id: 'm2', recipeId: 'r2', dayOfWeek: 'Monday', mealType: 'lunch' },
+      { id: 'm3', recipeId: 'r3', dayOfWeek: 'Tuesday', mealType: 'dinner' },
     ],
   },
   {
@@ -25,16 +28,33 @@ const mockMealPlans: MealPlan[] = [
     description: 'Focus on high-protein meals for muscle building and satiety.',
     meals: [
       { id: 'm3', recipeId: 'r3', dayOfWeek: 'Tuesday', mealType: 'dinner' },
+      { id: 'm1', recipeId: 'r1', dayOfWeek: 'Wednesday', mealType: 'breakfast'},
     ],
   },
 ];
 
-// Mock recipes for context
-const mockRecipes = {
-  r1: { name: "Oatmeal with Berries", imageUrl: "https://placehold.co/80x80.png", dataAiHint: "oatmeal berries" },
-  r2: { name: "Grilled Chicken Salad", imageUrl: "https://placehold.co/80x80.png", dataAiHint: "chicken salad" },
-  r3: { name: "Steak and Veggies", imageUrl: "https://placehold.co/80x80.png", dataAiHint: "steak vegetables" },
+// Updated mock recipes with nutritionalInfo for calorie display
+const mockRecipes: Record<string, Pick<Recipe, 'name' | 'imageUrl' | 'nutritionalInfo' | 'tags'>> = {
+  r1: { 
+    name: "Oatmeal with Berries", 
+    imageUrl: "https://placehold.co/80x80.png",
+    nutritionalInfo: { calories: 300, protein: 10, carbs: 55, fat: 5 },
+    tags: ["breakfast", "healthy"]
+  },
+  r2: { 
+    name: "Grilled Chicken Salad", 
+    imageUrl: "https://placehold.co/80x80.png",
+    nutritionalInfo: { calories: 450, protein: 40, carbs: 20, fat: 25 },
+    tags: ["lunch", "low-carb"]
+  },
+  r3: { 
+    name: "Steak and Veggies", 
+    imageUrl: "https://placehold.co/80x80.png",
+    nutritionalInfo: { calories: 550, protein: 50, carbs: 30, fat: 28 },
+    tags: ["dinner", "protein"]
+  },
 };
+
 
 export default function MealPlansPage() {
   return (
@@ -67,36 +87,47 @@ export default function MealPlansPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {mockMealPlans.map((plan) => (
-            <Card key={plan.id} className="flex flex-col">
-              <CardHeader>
-                <CardTitle>{plan.name}</CardTitle>
+            <Card key={plan.id} className="flex flex-col shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <CardHeader className="pb-4">
+                <CardTitle className="font-headline text-xl">{plan.name}</CardTitle>
                 <CardDescription>
-                  Week of {new Date(plan.weekStartDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  Week of {new Date(plan.weekStartDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                 </CardDescription>
                 {plan.description && <p className="text-sm text-muted-foreground pt-2">{plan.description}</p>}
               </CardHeader>
-              <CardContent className="flex-grow">
-                <h4 className="font-medium mb-2 text-sm">Sample Meals:</h4>
-                <ul className="space-y-2">
-                  {plan.meals.slice(0, 2).map(meal => {
+              <CardContent className="flex-grow space-y-3">
+                <h4 className="font-medium mb-2 text-sm flex items-center"><Utensils className="mr-2 h-4 w-4 text-primary" />Sample Meals:</h4>
+                <ul className="space-y-3">
+                  {plan.meals.slice(0, 3).map(meal => { // Show up to 3 sample meals
                     const recipe = mockRecipes[meal.recipeId as keyof typeof mockRecipes];
+                    if (!recipe) return <li key={meal.id} className="text-sm text-red-500">Recipe not found</li>;
+                    
+                    const dataAiHint = recipe.tags ? recipe.tags.join(" ") : "food";
+
                     return (
-                      <li key={meal.id} className="flex items-center gap-2 p-2 rounded-md bg-muted/30">
+                      <li key={meal.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/40 border border-muted">
                         {recipe.imageUrl && 
-                          <Image src={recipe.imageUrl} alt={recipe.name} width={40} height={40} className="rounded-sm" data-ai-hint={recipe.dataAiHint as string} />
+                          <Image src={recipe.imageUrl} alt={recipe.name} width={50} height={50} className="rounded-md object-cover" data-ai-hint={dataAiHint} />
                         }
-                        <div>
-                           <span className="text-xs font-semibold">{recipe.name}</span>
+                        <div className="flex-1">
+                           <span className="block text-sm font-semibold text-primary-foreground/90">{recipe.name}</span>
                            <p className="text-xs text-muted-foreground">{meal.dayOfWeek}, {meal.mealType}</p>
+                           {recipe.nutritionalInfo?.calories && (
+                             <p className="text-xs text-muted-foreground mt-0.5">Approx. {recipe.nutritionalInfo.calories} calories</p>
+                           )}
+                           <Link href="/smart-suggestions" className="text-xs text-accent hover:text-accent/80 hover:underline mt-1 inline-flex items-center">
+                             <Lightbulb className="mr-1 h-3 w-3" /> Get Ideas
+                           </Link>
                         </div>
                       </li>
                     );
                   })}
-                  {plan.meals.length > 2 && <li className="text-xs text-muted-foreground p-2 text-center">...and {plan.meals.length - 2} more</li>}
+                  {plan.meals.length > 3 && <li className="text-xs text-muted-foreground p-2 text-center">...and {plan.meals.length - 3} more meals</li>}
+                   {plan.meals.length === 0 && <li className="text-xs text-muted-foreground p-2">No meals added to this plan yet.</li>}
                 </ul>
               </CardContent>
-              <CardContent className="border-t pt-4"> {/* CardFooter equivalent styling */}
-                <div className="flex justify-end gap-2">
+              <CardFooter className="border-t pt-4 mt-auto"> {/* Use CardFooter for consistent padding and border */}
+                <div className="flex justify-end gap-2 w-full">
                   <Button variant="outline" size="sm" asChild>
                     <Link href={`/meal-plans/edit/${plan.id}`}>
                       <Edit3 className="mr-1 h-3 w-3" /> Edit
@@ -106,17 +137,11 @@ export default function MealPlansPage() {
                     <Trash2 className="mr-1 h-3 w-3" /> Delete
                   </Button>
                 </div>
-              </CardContent>
+              </CardFooter>
             </Card>
           ))}
         </div>
       )}
-      {/* TODO: Add Meal Plan creation form / drag-drop interface placeholder */}
-      {/* For now, linking to a new page for creation */}
-      {/* <div className="mt-8 p-6 border rounded-lg">
-        <h2 className="text-2xl font-headline mb-4">Meal Plan Creator (Placeholder)</h2>
-        <p className="text-muted-foreground">Drag and drop recipes onto the calendar to build your meal plan. This feature is under construction.</p>
-      </div> */}
     </div>
   );
 }
