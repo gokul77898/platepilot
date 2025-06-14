@@ -15,11 +15,11 @@ import {
   SidebarMenuButton,
   SidebarInset,
   SidebarTrigger,
-  useSidebar, // This import is used by MobileHeader
+  useSidebar,
 } from '@/components/ui/sidebar';
 import Logo from '@/components/icons/Logo';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, UtensilsCrossed, BookOpenText, ShoppingCart, Lightbulb, UserCircle, Settings, LogOut, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed, BookOpenText, ShoppingCart, Lightbulb, Settings, LogOut, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { Toaster } from "@/components/ui/toaster";
 
 interface NavItem {
@@ -53,7 +53,6 @@ const MobileHeader = () => {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  // const { state, isMobile, toggleSidebar } = useSidebar(); // This line was causing the error and is removed.
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -70,7 +69,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
-                  <Link href={item.href} legacyBehavior passHref>
+                  <Link href={item.href}>
                     <SidebarMenuButton
                       asChild
                       isActive={pathname === item.href}
