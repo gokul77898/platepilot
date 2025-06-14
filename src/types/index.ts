@@ -67,6 +67,19 @@ export interface RecipeIdea {
   name: string;
 }
 
+// For AI Meal Image Analysis
+export interface AnalyzeMealImageInput {
+  imageDataUri: string;
+}
+
+export interface AnalyzeMealImageOutput {
+  identifiedDish: string;
+  estimatedCalories: number | null;
+  isHealthy: boolean;
+  healthinessReason: string;
+  consumptionAdvice: string;
+}
+
 
 // Pantry Management
 export interface PantryItem {
@@ -77,3 +90,4 @@ export interface PantryItem {
   expiryDate?: string; // ISO date string
   category?: string; // e.g., Dairy, Produce, Pantry Staples
 }
+
