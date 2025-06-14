@@ -7,5 +7,5 @@ import '@/ai/flows/suggest-recipes-given-constraints.ts';
 import '@/ai/flows/analyze-meal-image-flow.ts';
 import '@/ai/flows/suggest-meals-with-calories-flow.ts';
 import '@/ai/flows/chatbot-flow.ts';
-import '@/ai/flows/generate-coaching-statement-flow.ts'; // Added new coaching statement flow
-
+import '@/ai/flows/generate-coaching-statement-flow.ts';
+import '@/ai/flows/analyze-recipe-nutrition-flow.ts'; // Added new recipe nutrition flow

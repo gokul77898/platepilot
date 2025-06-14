@@ -19,13 +19,15 @@ import type { UserProfileGoals } from '@/types';
 import { loadFromLocalStorage, saveToLocalStorage } from '@/lib/localStorage';
 import { getAiCoachingStatement } from './actions';
 
-const USER_GOALS_STORAGE_KEY = 'userProfileGoals';
-const COACHING_STATEMENT_STORAGE_KEY = 'aiCoachingStatement';
+const USER_GOALS_STORAGE_KEY = 'userProfileGoals_v2'; // Consider versioning if schema changes significantly
+const COACHING_STATEMENT_STORAGE_KEY = 'aiCoachingStatement_v2';
 
 const userProfileGoalsSchema = z.object({
   primaryGoal: z.string().min(5, "Please describe your primary goal in a bit more detail (min. 5 characters)."),
   dietaryPreferences: z.string().min(5, "Describe your dietary preferences or important notes (min. 5 characters)."),
   challenges: z.string().min(5, "What are some challenges you face (min. 5 characters)?"),
+  allergies: z.string().optional().describe("Comma-separated list of known allergies."),
+  generalDietaryNotes: z.string().optional().describe("General notes about your diet, e.g., 'vegan', 'prefers spicy food'."),
 });
 
 type UserProfileGoalsFormValues = z.infer<typeof userProfileGoalsSchema>;
@@ -43,6 +45,8 @@ export default function AiCoachPage() {
       primaryGoal: '',
       dietaryPreferences: '',
       challenges: '',
+      allergies: '',
+      generalDietaryNotes: '',
     },
   });
 
@@ -51,10 +55,14 @@ export default function AiCoachPage() {
       primaryGoal: '',
       dietaryPreferences: '',
       challenges: '',
+      allergies: '',
+      generalDietaryNotes: '',
     });
     form.reset(storedGoals);
     const storedStatement = loadFromLocalStorage<string | null>(COACHING_STATEMENT_STORAGE_KEY, null);
-    setAiCoachingStatement(storedStatement);
+    if (storedStatement && storedGoals.primaryGoal) { // Only load statement if goals were present
+        setAiCoachingStatement(storedStatement);
+    }
     setIsLoadingGoals(false);
   }, [form]);
 
@@ -75,8 +83,8 @@ export default function AiCoachPage() {
     setIsSubmitting(true);
     saveToLocalStorage(USER_GOALS_STORAGE_KEY, data);
     toast({
-      title: "Goals Updated!",
-      description: "Your coaching profile has been saved.",
+      title: "Profile Updated!",
+      description: "Your AI Coach profile has been saved.",
     });
     await handleFetchCoachingStatement(data);
     setIsSubmitting(false);
@@ -95,17 +103,17 @@ export default function AiCoachPage() {
     <div className="space-y-8">
       <PageHeader
         title="Your AI Health Coach"
-        description="Let's personalize your journey to better health and smart eating."
+        description="Let's personalize your journey. The more you tell your coach, the better the advice!"
       />
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
             <Brain className="mr-2 h-6 w-6 text-primary" />
-            Define Your Path
+            Your Health & Diet Profile
           </CardTitle>
           <CardDescription>
-            Tell us about your health aspirations, dietary needs, and any hurdles. This helps your AI Coach tailor guidance for you.
+            Share your aspirations, dietary needs, allergies, and hurdles. This helps your AI Coach tailor guidance specifically for you.
           </CardDescription>
         </CardHeader>
         <Form {...form}>
@@ -129,11 +137,39 @@ export default function AiCoachPage() {
                 name="dietaryPreferences"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Dietary Preferences & Notes</FormLabel>
+                    <FormLabel>Dietary Preferences & Key Restrictions</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="e.g., Vegetarian, gluten-free, prefer quick 30-min meals, allergic to shellfish" {...field} rows={3}/>
+                      <Textarea placeholder="e.g., Vegetarian, gluten-free, prefer quick 30-min meals, generally avoid dairy" {...field} rows={3}/>
                     </FormControl>
-                    <FormDescription>Any important dietary considerations or preferences.</FormDescription>
+                    <FormDescription>Specific diets (like keto, paleo), important food avoidances, or general preferences.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+                <FormField
+                control={form.control}
+                name="allergies"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Known Allergies (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Peanuts, shellfish, gluten, dairy (if strict)" {...field} />
+                    </FormControl>
+                    <FormDescription>List any food allergies, comma-separated.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="generalDietaryNotes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Other Dietary Notes & Lifestyle (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="e.g., Follow a vegan diet, prefer spicy food, need low-sodium options, intermittent fasting schedule." {...field} rows={3}/>
+                    </FormControl>
+                     <FormDescription>Any other details about your eating habits or lifestyle that might be relevant.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -145,7 +181,7 @@ export default function AiCoachPage() {
                   <FormItem>
                     <FormLabel>Key Challenges You Face</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="e.g., Cravings for sweets, not enough time for breakfast, emotional eating" {...field} rows={3}/>
+                      <Textarea placeholder="e.g., Cravings for sweets, not enough time for breakfast, emotional eating, staying hydrated" {...field} rows={3}/>
                     </FormControl>
                     <FormDescription>What makes achieving your goals difficult?</FormDescription>
                     <FormMessage />
@@ -162,7 +198,7 @@ export default function AiCoachPage() {
                   type="button" 
                   variant="outline"
                   onClick={() => handleFetchCoachingStatement(form.getValues())} 
-                  disabled={isGeneratingStatement || !form.formState.isValid || isSubmitting}
+                  disabled={isGeneratingStatement || !form.formState.isDirty && !aiCoachingStatement } // Enable if form is dirty OR no statement exists
                   className="w-full sm:w-auto"
                 >
                 {isGeneratingStatement ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4 text-accent" />}
@@ -191,7 +227,7 @@ export default function AiCoachPage() {
               aiCoachingStatement && (
                 <Alert className="bg-accent/10 border-accent/30">
                   <Sparkles className="h-5 w-5 text-accent" />
-                  <AlertTitle className="text-accent-foreground/90">Personalized Insight</AlertTitle>
+                  <AlertTitle className="text-accent-foreground/90 font-semibold">Personalized Insight</AlertTitle>
                   <AlertDescription className="text-accent-foreground/80 whitespace-pre-line">
                     {aiCoachingStatement}
                   </AlertDescription>

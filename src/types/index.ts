@@ -8,7 +8,7 @@ export interface Ingredient {
 }
 
 export interface NutritionalInfo {
-  calories?: number; // Made optional as not all recipes might have it initially
+  calories?: number; 
   protein?: number;
   carbs?: number;
   fat?: number;
@@ -28,7 +28,7 @@ export interface Recipe {
   tags?: string[]; 
   createdAt?: string;
   updatedAt?: string;
-  dataAiHint?: string; // Added for dashboard image consistency
+  dataAiHint?: string; 
 }
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
@@ -85,7 +85,7 @@ export interface AnalyzeMealImageOutput {
   isHealthy: boolean;
   healthinessReason: string;
   consumptionAdvice: string;
-  dietaryFlags?: string[]; // Added for dietary flags
+  dietaryFlags?: string[]; 
 }
 
 
@@ -135,8 +135,10 @@ export interface ChatMessage {
 // For AI Coach - User Profile Goals
 export interface UserProfileGoals {
   primaryGoal: string;
-  dietaryPreferences: string;
+  dietaryPreferences: string; // Existing, can be used for general diet notes initially
   challenges: string;
+  allergies?: string; // e.g., "peanuts, shellfish, dairy"
+  generalDietaryNotes?: string; // e.g., "vegan", "low-carb", "likes spicy food"
 }
 
 export interface GenerateCoachingStatementInput extends UserProfileGoals {}
@@ -144,3 +146,17 @@ export interface GenerateCoachingStatementInput extends UserProfileGoals {}
 export interface GenerateCoachingStatementOutput {
   statement: string;
 }
+
+// For AI Recipe Nutritional Analysis
+export interface AnalyzeRecipeNutritionInputIngredient {
+    name: string;
+    quantity: string;
+    unit?: string;
+}
+export interface AnalyzeRecipeNutritionInput {
+    recipeName: string;
+    ingredients: AnalyzeRecipeNutritionInputIngredient[];
+    servings: number;
+}
+
+export type AnalyzeRecipeNutritionOutput = NutritionalInfo; // Output is the same as NutritionalInfo
