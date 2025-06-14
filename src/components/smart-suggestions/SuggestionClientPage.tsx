@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState } from 'react';
@@ -10,12 +11,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { getSmartRecipeSuggestions, getRecipeIdeasFromConstraints } from '@/app/smart-suggestions/actions';
-import type { SuggestedRecipe, RecipeIdea } from '@/types';
-import { Loader2, Lightbulb, CheckCircle, XCircle, ChefHat, HelpCircle } from 'lucide-react';
+import { getSmartRecipeSuggestions, getRecipeIdeasFromConstraints, getRecipeAdaptation } from '@/app/smart-suggestions/actions';
+import type { SuggestedRecipe, RecipeIdea, AdaptRecipeInput, AdaptRecipeOutput } from '@/types';
+import { Loader2, Lightbulb, CheckCircle, XCircle, ChefHat, Wand2, AlertTriangle } from 'lucide-react'; // Added Wand2, AlertTriangle
 import { useToast } from "@/hooks/use-toast";
 import Image from 'next/image';
-// Removed Alert related imports as they are now in MealAnalyzerClient
+import { Separator } from '@/components/ui/separator';
 
 // Schema for Alternative Recipe Suggestions
 const alternativeSuggestionFormSchema = z.object({
@@ -35,6 +36,14 @@ const recipeIdeasFormSchema = z.object({
 });
 type RecipeIdeasFormValues = z.infer<typeof recipeIdeasFormSchema>;
 
+// Schema for Recipe Adaptation Assistant
+const recipeAdaptationFormSchema = z.object({
+  originalRecipeNameOrDetails: z.string().min(10, "Please provide some details about the original recipe (at least 10 characters)."),
+  adaptationRequest: z.string().min(5, "Describe the adaptation you need (at least 5 characters)."),
+});
+type RecipeAdaptationFormValues = z.infer<typeof recipeAdaptationFormSchema>;
+
+
 // Use a more specific name for SubmitHandler if there's a global one
 type SubmitHandler<T> = OriginalSubmitHandler<T>;
 
@@ -42,8 +51,11 @@ type SubmitHandler<T> = OriginalSubmitHandler<T>;
 export default function SuggestionClientPage() {
   const [alternativeSuggestions, setAlternativeSuggestions] = useState<SuggestedRecipe[]>([]);
   const [recipeIdeas, setRecipeIdeas] = useState<RecipeIdea[]>([]);
+  const [recipeAdaptation, setRecipeAdaptation] = useState<AdaptRecipeOutput | null>(null);
+
   const [isAlternativeLoading, setIsAlternativeLoading] = useState(false);
   const [isRecipeIdeasLoading, setIsRecipeIdeasLoading] = useState(false);
+  const [isAdaptationLoading, setIsAdaptationLoading] = useState(false);
   
   const { toast } = useToast();
 
@@ -66,6 +78,15 @@ export default function SuggestionClientPage() {
       otherPreferences: "",
     },
   });
+
+  const recipeAdaptationForm = useForm<RecipeAdaptationFormValues>({
+    resolver: zodResolver(recipeAdaptationFormSchema),
+    defaultValues: {
+      originalRecipeNameOrDetails: "",
+      adaptationRequest: "",
+    },
+  });
+
 
   const onAlternativeSubmit: SubmitHandler<AlternativeSuggestionFormValues> = async (data) => {
     setIsAlternativeLoading(true);
@@ -112,16 +133,110 @@ export default function SuggestionClientPage() {
     }
   };
 
+  const onRecipeAdaptationSubmit: SubmitHandler<RecipeAdaptationFormValues> = async (data) => {
+    setIsAdaptationLoading(true);
+    setRecipeAdaptation(null);
+    
+    const result = await getRecipeAdaptation(data);
+    setIsAdaptationLoading(false);
+
+    if ("error" in result) {
+      toast({ variant: "destructive", title: "Adaptation Error", description: result.error });
+    } else {
+      setRecipeAdaptation(result);
+      toast({ title: "Recipe Adaptation Ready!", description: "AI has provided suggestions for adapting your recipe." });
+    }
+  };
+
+
   return (
     <div className="space-y-8">
+      {/* Form for Recipe Adaptation Assistant */}
+      <Form {...recipeAdaptationForm}>
+        <form onSubmit={recipeAdaptationForm.handleSubmit(onRecipeAdaptationSubmit)} className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center"><Wand2 className="mr-2 h-6 w-6 text-primary" /> Recipe Adaptation Assistant</CardTitle>
+              <CardDescription>
+                Need to make a recipe fit your dietary needs? Paste the recipe details and tell us how you want to change it.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={recipeAdaptationForm.control}
+                name="originalRecipeNameOrDetails"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Original Recipe Name / Ingredients / Instructions</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="e.g., 'Grandma's Chocolate Cake', or paste full recipe here..." {...field} rows={6} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={recipeAdaptationForm.control}
+                name="adaptationRequest"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>How would you like to adapt it?</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., Make it gluten-free and dairy-free, Reduce sugar by half" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+            <CardFooter>
+              <Button type="submit" disabled={isAdaptationLoading} className="w-full md:w-auto bg-primary text-primary-foreground hover:bg-primary/90">
+                {isAdaptationLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                Adapt Recipe
+              </Button>
+            </CardFooter>
+          </Card>
+        </form>
+      </Form>
+
+      {/* Display Recipe Adaptation */}
+      {isAdaptationLoading && (
+        <div className="text-center py-10"><Loader2 className="mx-auto h-12 w-12 animate-spin text-primary" /><p className="mt-2 text-muted-foreground">AI is adapting your recipe...</p></div>
+      )}
+      {!isAdaptationLoading && recipeAdaptation && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl font-headline">Adapted: {recipeAdaptation.adaptedRecipeName}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <h4 className="font-semibold text-lg mb-2">Suggested Modifications:</h4>
+              <p className="text-sm text-muted-foreground whitespace-pre-line">{recipeAdaptation.suggestedModifications}</p>
+            </div>
+            {recipeAdaptation.warningsOrConsiderations && (
+              <div>
+                <Separator className="my-3"/>
+                <h4 className="font-semibold text-lg mb-2 flex items-center"><AlertTriangle className="mr-2 h-5 w-5 text-accent" />Warnings & Considerations:</h4>
+                <p className="text-sm text-muted-foreground whitespace-pre-line">{recipeAdaptation.warningsOrConsiderations}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+       {!isAdaptationLoading && !recipeAdaptation && recipeAdaptationForm.formState.isSubmitted && (
+         <Card><CardContent className="p-6 text-center"><Wand2 className="mx-auto h-12 w-12 text-muted-foreground" /><h3 className="mt-4 text-xl font-semibold">No Adaptation Available</h3><p className="mt-1 text-muted-foreground">AI could not adapt the recipe based on your input. Try providing more details or a different adaptation request.</p></CardContent></Card>
+      )}
+
+      <Separator className="my-12" />
+
       {/* Form for Alternative Recipes */}
       <Form {...alternativeForm}>
         <form onSubmit={alternativeForm.handleSubmit(onAlternativeSubmit)} className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Find Alternative Recipes</CardTitle>
+              <CardTitle className="flex items-center"><Lightbulb className="mr-2 h-6 w-6 text-accent" />Find Alternative Recipes</CardTitle>
               <CardDescription>
-                Tell us about a recipe or ingredients you have, and any constraints, to get smart suggestions.
+                Tell us about a recipe or ingredients you have, and any constraints, to get smart suggestions for different recipes.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -234,7 +349,7 @@ export default function SuggestionClientPage() {
         <form onSubmit={recipeIdeasForm.handleSubmit(onRecipeIdeasSubmit)} className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>What's For Dinner?</CardTitle>
+              <CardTitle className="flex items-center"><ChefHat className="mr-2 h-6 w-6 text-primary" />What's For Dinner?</CardTitle>
               <CardDescription>Get quick recipe ideas based on what you have.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -310,3 +425,4 @@ export default function SuggestionClientPage() {
     </div>
   );
 }
+

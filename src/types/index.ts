@@ -160,3 +160,16 @@ export interface AnalyzeRecipeNutritionInput {
 }
 
 export type AnalyzeRecipeNutritionOutput = NutritionalInfo; // Output is the same as NutritionalInfo
+
+
+// For AI Recipe Adaptation Assistant
+export interface AdaptRecipeInput {
+  originalRecipeNameOrDetails: string;
+  adaptationRequest: string;
+}
+
+export interface AdaptRecipeOutput {
+  adaptedRecipeName: string;
+  suggestedModifications: string;
+  warningsOrConsiderations?: string;
+}
