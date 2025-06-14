@@ -1,69 +1,66 @@
+
+"use client";
+
+import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Recipe } from '@/types';
-import Link from 'next/link';
-import { PlusCircle, Edit3, Trash2, Eye, Soup, Clock, Users } from 'lucide-react';
-import Image from 'next/image';
+import { PlusCircle, Edit3, Trash2, Eye, Soup, Clock, Users, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { loadFromLocalStorage, saveToLocalStorage, generateId } from '@/lib/localStorage';
+import { useToast } from "@/hooks/use-toast";
 
-// Mock data for Recipes
-const mockRecipes: Recipe[] = [
-  {
-    id: 'r1',
-    name: 'Classic Spaghetti Bolognese',
-    description: 'A rich and hearty Italian classic, perfect for a family dinner.',
-    ingredients: [
-      { name: 'Spaghetti', quantity: '400g' },
-      { name: 'Minced Beef', quantity: '500g' },
-      { name: 'Tomato Passata', quantity: '700g' },
-    ],
-    instructions: ['Cook spaghetti.', 'Brown minced beef.', 'Add passata and simmer.', 'Serve hot.'],
-    prepTime: '20 mins',
-    cookTime: '1 hour',
-    servings: 4,
-    imageUrl: 'https://placehold.co/600x400.png',
-    tags: ['Italian', 'Pasta', 'Family Favorite'],
-    nutritionalInfo: { calories: 600, protein: 30, carbs: 70, fat: 20 }
-  },
-  {
-    id: 'r2',
-    name: 'Avocado Toast with Egg',
-    description: 'A quick and nutritious breakfast or light lunch option.',
-    ingredients: [
-      { name: 'Sourdough Bread', quantity: '2 slices' },
-      { name: 'Avocado', quantity: '1' },
-      { name: 'Eggs', quantity: '2' },
-    ],
-    instructions: ['Toast bread.', 'Mash avocado.', 'Fry eggs.', 'Assemble and season.'],
-    prepTime: '5 mins',
-    cookTime: '10 mins',
-    servings: 1,
-    imageUrl: 'https://placehold.co/600x400.png',
-    tags: ['Breakfast', 'Quick', 'Healthy'],
-    nutritionalInfo: { calories: 400, protein: 20, carbs: 30, fat: 25 }
-  },
-   {
-    id: 'r3',
-    name: 'Chicken Stir-fry',
-    description: 'A flavorful and customizable stir-fry with chicken and vegetables.',
-    ingredients: [
-      { name: 'Chicken Breast', quantity: '300g' },
-      { name: 'Broccoli', quantity: '1 head' },
-      { name: 'Soy Sauce', quantity: '3 tbsp' },
-    ],
-    instructions: ['Slice chicken.', 'Chop vegetables.', 'Stir-fry chicken.', 'Add vegetables and sauce.'],
-    prepTime: '15 mins',
-    cookTime: '15 mins',
-    servings: 2,
-    imageUrl: 'https://placehold.co/600x400.png',
-    tags: ['Asian', 'Quick', 'Dinner'],
-    nutritionalInfo: { calories: 450, protein: 40, carbs: 20, fat: 20 }
-  },
-];
-
+const RECIPES_STORAGE_KEY = 'recipes';
 
 export default function RecipesPage() {
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  const fetchRecipes = useCallback(() => {
+    setIsLoading(true);
+    const storedRecipes = loadFromLocalStorage<Recipe[]>(RECIPES_STORAGE_KEY, []);
+    setRecipes(storedRecipes);
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchRecipes();
+  }, [fetchRecipes]);
+
+  const handleDeleteRecipe = (recipeId: string) => {
+    const updatedRecipes = recipes.filter(recipe => recipe.id !== recipeId);
+    saveToLocalStorage(RECIPES_STORAGE_KEY, updatedRecipes);
+    setRecipes(updatedRecipes);
+    toast({
+      title: "Recipe Deleted",
+      description: "The recipe has been removed from your collection.",
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="ml-2">Loading recipes...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -78,12 +75,12 @@ export default function RecipesPage() {
         }
       />
 
-      {mockRecipes.length === 0 ? (
+      {recipes.length === 0 ? (
          <Card>
           <CardContent className="p-6 text-center">
             <Soup className="mx-auto h-12 w-12 text-muted-foreground" />
             <h3 className="mt-4 text-xl font-semibold">No Recipes Yet</h3>
-            <p className="mt-1 text-muted-foreground">Start by adding your first recipe.</p>
+            <p className="mt-1 text-muted-foreground">Start by adding your first recipe to your collection.</p>
             <Button asChild className="mt-4 bg-primary hover:bg-primary/90">
               <Link href="/recipes/new">
                 <PlusCircle className="mr-2 h-4 w-4" /> Add New Recipe
@@ -93,11 +90,17 @@ export default function RecipesPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockRecipes.map((recipe) => (
+          {recipes.map((recipe) => (
             <Card key={recipe.id} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
               {recipe.imageUrl && (
                 <div className="relative h-48 w-full">
-                  <Image src={recipe.imageUrl} alt={recipe.name} layout="fill" objectFit="cover" data-ai-hint={`${recipe.tags ? recipe.tags[0] : ''} food`} />
+                  <Image 
+                    src={recipe.imageUrl || "https://placehold.co/600x400.png"} 
+                    alt={recipe.name} 
+                    layout="fill" 
+                    objectFit="cover" 
+                    data-ai-hint={`${recipe.tags && recipe.tags.length > 0 ? recipe.tags[0] : 'food'}`} 
+                  />
                 </div>
               )}
               <CardHeader className="pb-2">
@@ -111,7 +114,7 @@ export default function RecipesPage() {
                   <span className="flex items-center gap-1"><Users size={16} /> {recipe.servings} Servings</span>
                 </div>
                 {recipe.tags && recipe.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1 mt-2">
                     {recipe.tags.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
                   </div>
                 )}
@@ -129,9 +132,27 @@ export default function RecipesPage() {
                         <Edit3 className="h-4 w-4" />
                       </Link>
                     </Button>
-                    <Button variant="destructive" size="icon" title="Delete Recipe">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="icon" title="Delete Recipe">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the recipe "{recipe.name}".
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDeleteRecipe(recipe.id)} className="bg-destructive hover:bg-destructive/90">
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               </CardFooter>

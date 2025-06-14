@@ -1,5 +1,7 @@
 
+
 export interface Ingredient {
+  id: string; // Added ID for potential key prop usage if ingredients become more dynamic
   name: string;
   quantity: string;
   unit?: string;
@@ -16,48 +18,57 @@ export interface Recipe {
   id: string;
   name: string;
   description?: string;
-  ingredients: Ingredient[];
-  instructions: string[];
-  prepTime: string; // e.g., "30 minutes"
-  cookTime: string; // e.g., "1 hour"
+  ingredients: Ingredient[]; // Changed from string to Ingredient[] for better structure
+  instructions: string[]; // Changed from string to string[]
+  prepTime: string; 
+  cookTime: string; 
   servings: number;
   nutritionalInfo?: NutritionalInfo;
   imageUrl?: string;
-  tags?: string[];
+  tags?: string[]; // Changed from string to string[]
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 export interface Meal {
-  id: string; // Could be auto-generated or based on index
-  recipeId: string; // User will input this, ideally from a recipe selector later
+  id: string; 
+  recipeId: string; 
   dayOfWeek: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday';
   mealType: MealType;
-  // Optional: Add recipeName if you want to store it directly, though recipeId is for lookup
-  // recipeName?: string; 
+  // Optional: Store recipe name directly for quicker display, but recipeId is canonical
+  recipeName?: string; 
 }
 
 export interface MealPlan {
   id: string;
   name: string;
-  weekStartDate: string; // ISO date string, e.g., "2024-07-29"
+  weekStartDate: string; 
   meals: Meal[];
   description?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ShoppingListItem {
   id: string;
-  ingredientName: string;
+  name: string; // Simplified from ingredientName
   quantity: string;
   unit?: string;
-  recipeNames: string[];
+  // recipeNames might be complex to maintain dynamically without a backend,
+  // For localStorage, keeping it simple or deriving it on the fly if needed.
+  // For now, let's remove recipeNames to simplify localStorage version.
+  // recipeNames?: string[]; 
   isBought: boolean;
+  notes?: string;
+  createdAt?: string;
 }
 
 // For AI recipe suggestions
 export interface SuggestedRecipe {
   name: string;
-  ingredients: string; // This is a string as per AI flow output
+  ingredients: string; 
   reason: string;
   meetsCriteria: boolean;
 }
@@ -87,7 +98,8 @@ export interface PantryItem {
   name: string;
   quantity: string;
   unit?: string;
-  expiryDate?: string; // ISO date string
-  category?: string; // e.g., Dairy, Produce, Pantry Staples
+  expiryDate?: string; 
+  category?: string; 
+  notes?: string;
+  createdAt?: string;
 }
-

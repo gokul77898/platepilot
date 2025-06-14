@@ -1,12 +1,12 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm, useFieldArray, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -48,73 +48,120 @@ const recipeFormSchema = z.object({
 
 type RecipeFormValues = z.infer<typeof recipeFormSchema>;
 
-export default function NewRecipePage() {
+export default function EditRecipePage() {
   const router = useRouter();
+  const params = useParams();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [recipeToEdit, setRecipeToEdit] = useState<Recipe | null>(null);
+
+  const recipeId = typeof params.id === 'string' ? params.id : undefined;
 
   const form = useForm<RecipeFormValues>({
     resolver: zodResolver(recipeFormSchema),
     defaultValues: {
       name: '',
       description: '',
-      ingredients: [{ id: generateId(), name: '', quantity: '', unit: '' }],
+      ingredients: [],
       instructions: '',
       prepTime: '',
       cookTime: '',
       servings: 1,
       imageUrl: '',
       tags: '',
-      nutritionalInfo: {
-        calories: undefined,
-        protein: undefined,
-        carbs: undefined,
-        fat: undefined,
-      },
+      nutritionalInfo: { calories: undefined, protein: undefined, carbs: undefined, fat: undefined },
     },
   });
 
-  const { fields: ingredientFields, append: appendIngredient, remove: removeIngredient } = useFieldArray({
+  const { fields: ingredientFields, append: appendIngredient, remove: removeIngredient, replace: replaceIngredients } = useFieldArray({
     control: form.control,
     name: "ingredients",
   });
 
+  useEffect(() => {
+    if (recipeId) {
+      setIsLoading(true);
+      const storedRecipes = loadFromLocalStorage<Recipe[]>(RECIPES_STORAGE_KEY, []);
+      const foundRecipe = storedRecipes.find(r => r.id === recipeId);
+      if (foundRecipe) {
+        setRecipeToEdit(foundRecipe);
+        form.reset({
+          name: foundRecipe.name,
+          description: foundRecipe.description || '',
+          ingredients: foundRecipe.ingredients.map(ing => ({...ing, id: ing.id || generateId()})), // ensure IDs
+          instructions: Array.isArray(foundRecipe.instructions) ? foundRecipe.instructions.join('\n') : '',
+          prepTime: foundRecipe.prepTime,
+          cookTime: foundRecipe.cookTime,
+          servings: foundRecipe.servings,
+          imageUrl: foundRecipe.imageUrl || '',
+          tags: Array.isArray(foundRecipe.tags) ? foundRecipe.tags.join(', ') : '',
+          nutritionalInfo: foundRecipe.nutritionalInfo || { calories: undefined, protein: undefined, carbs: undefined, fat: undefined },
+        });
+      } else {
+        toast({ variant: "destructive", title: "Error", description: "Recipe not found." });
+        router.push('/recipes');
+      }
+      setIsLoading(false);
+    }
+  }, [recipeId, form, router, toast]);
+
 
   const onSubmit: SubmitHandler<RecipeFormValues> = (data) => {
+    if (!recipeToEdit) return;
     setIsSubmitting(true);
-    const existingRecipes = loadFromLocalStorage<Recipe[]>(RECIPES_STORAGE_KEY, []);
-    
-    const newRecipe: Recipe = {
+
+    const updatedRecipe: Recipe = {
+      ...recipeToEdit,
       ...data,
-      id: generateId(),
       instructions: data.instructions.split('\n').map(instr => instr.trim()).filter(instr => instr.length > 0),
       tags: data.tags ? data.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0) : [],
-      imageUrl: data.imageUrl || "https://placehold.co/600x400.png", // Default placeholder if empty
-      ingredients: data.ingredients.map(ing => ({...ing, id: ing.id || generateId() })), // Ensure IDs
-      createdAt: new Date().toISOString(),
+      imageUrl: data.imageUrl || "https://placehold.co/600x400.png",
+      ingredients: data.ingredients.map(ing => ({...ing, id: ing.id || generateId()})),
       updatedAt: new Date().toISOString(),
     };
 
-    saveToLocalStorage(RECIPES_STORAGE_KEY, [...existingRecipes, newRecipe]);
-
-    toast({
-      title: "Recipe Added!",
-      description: `${newRecipe.name} has been successfully created.`,
-    });
+    const existingRecipes = loadFromLocalStorage<Recipe[]>(RECIPES_STORAGE_KEY, []);
+    const recipeIndex = existingRecipes.findIndex(r => r.id === recipeToEdit.id);
+    
+    if (recipeIndex > -1) {
+      existingRecipes[recipeIndex] = updatedRecipe;
+      saveToLocalStorage(RECIPES_STORAGE_KEY, existingRecipes);
+      toast({
+        title: "Recipe Updated!",
+        description: `${updatedRecipe.name} has been successfully updated.`,
+      });
+      router.push(`/recipes/${updatedRecipe.id}`);
+    } else {
+      toast({ variant: "destructive", title: "Error", description: "Could not update recipe." });
+    }
     setIsSubmitting(false);
-    router.push('/recipes'); 
   };
+  
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="ml-2">Loading recipe...</p>
+      </div>
+    );
+  }
+
+  if (!recipeToEdit) {
+    return <p>Recipe not found or an error occurred.</p>;
+  }
+
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Add New Recipe"
-        description="Fill in the details to add a new recipe to your collection."
+        title={`Edit Recipe: ${recipeToEdit.name}`}
+        description="Modify the details of your recipe."
         actions={
           <Button variant="outline" asChild>
-            <Link href="/recipes">
+            <Link href={`/recipes/${recipeId}`}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Recipes
+              Back to Recipe
             </Link>
           </Button>
         }
@@ -123,21 +170,16 @@ export default function NewRecipePage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Recipe Details</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle>Recipe Details</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Recipe Name</FormLabel> <FormControl> <Input placeholder="e.g., Classic Spaghetti Bolognese" {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="description" render={({ field }) => ( <FormItem> <FormLabel>Description (Optional)</FormLabel> <FormControl> <Textarea placeholder="A brief summary of your recipe..." {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="imageUrl" render={({ field }) => ( <FormItem> <FormLabel>Image URL (Optional)</FormLabel> <FormControl> <Input placeholder="https://placehold.co/600x400.png" {...field} /> </FormControl> <FormDescription>Link to an image. Defaults to placeholder if empty.</FormDescription> <FormMessage /> </FormItem> )} />
+              <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Recipe Name</FormLabel> <FormControl> <Input {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
+              <FormField control={form.control} name="description" render={({ field }) => ( <FormItem> <FormLabel>Description (Optional)</FormLabel> <FormControl> <Textarea {...field} /> </FormControl> <FormMessage /> </FormItem> )} />
+              <FormField control={form.control} name="imageUrl" render={({ field }) => ( <FormItem> <FormLabel>Image URL (Optional)</FormLabel> <FormControl> <Input {...field} /> </FormControl> <FormDescription>Link to an image. Defaults to placeholder if empty.</FormDescription> <FormMessage /> </FormItem> )} />
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Ingredients</CardTitle>
-              <CardDescription>List all ingredients required for the recipe.</CardDescription>
-            </CardHeader>
+            <CardHeader><CardTitle>Ingredients</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               {ingredientFields.map((field, index) => (
                 <div key={field.id} className="flex gap-2 items-end p-3 border rounded-md bg-muted/50 relative">
@@ -147,7 +189,7 @@ export default function NewRecipePage() {
                   <Button type="button" variant="ghost" size="icon" onClick={() => removeIngredient(index)} className="text-muted-foreground hover:text-destructive shrink-0" title="Remove Ingredient"> <Trash2 className="h-4 w-4" /> </Button>
                 </div>
               ))}
-              <Button type="button" variant="outline" size="sm" onClick={() => appendIngredient({ id: generateId(), name: '', quantity: '', unit: '' })}> <PlusCircle className="mr-2 h-4 w-4" /> Add Ingredient </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => appendIngredient({id: generateId(), name: '', quantity: '', unit: '' })}> <PlusCircle className="mr-2 h-4 w-4" /> Add Ingredient </Button>
               <FormField name="ingredients" render={() => <FormMessage>{form.formState.errors.ingredients?.message || form.formState.errors.ingredients?.root?.message}</FormMessage>} />
             </CardContent>
           </Card>
@@ -155,23 +197,23 @@ export default function NewRecipePage() {
           <Card>
             <CardHeader><CardTitle>Instructions</CardTitle></CardHeader>
             <CardContent>
-              <FormField control={form.control} name="instructions" render={({ field }) => ( <FormItem> <FormLabel>Instructions</FormLabel> <FormControl> <Textarea placeholder="List each instruction step on a new line, e.g.,&#10;1. Preheat oven to 350°F.&#10;2. Mix dry ingredients." rows={8} {...field} /> </FormControl> <FormDescription>Enter each step of the recipe on a new line.</FormDescription> <FormMessage /> </FormItem> )} />
+              <FormField control={form.control} name="instructions" render={({ field }) => ( <FormItem> <FormLabel>Instructions</FormLabel> <FormControl> <Textarea placeholder="List each instruction step on a new line..." rows={8} {...field} /> </FormControl> <FormDescription>Enter each step of the recipe on a new line.</FormDescription> <FormMessage /> </FormItem> )} />
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader><CardTitle>Timings & Servings</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormField control={form.control} name="prepTime" render={({ field }) => ( <FormItem> <FormLabel>Prep Time</FormLabel> <FormControl><Input placeholder="e.g., 20 mins" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="cookTime" render={({ field }) => ( <FormItem> <FormLabel>Cook Time</FormLabel> <FormControl><Input placeholder="e.g., 45 mins" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
-              <FormField control={form.control} name="servings" render={({ field }) => ( <FormItem> <FormLabel>Servings</FormLabel> <FormControl><Input type="number" placeholder="e.g., 4" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+              <FormField control={form.control} name="prepTime" render={({ field }) => ( <FormItem> <FormLabel>Prep Time</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+              <FormField control={form.control} name="cookTime" render={({ field }) => ( <FormItem> <FormLabel>Cook Time</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )} />
+              <FormField control={form.control} name="servings" render={({ field }) => ( <FormItem> <FormLabel>Servings</FormLabel> <FormControl><Input type="number" {...field} /></FormControl> <FormMessage /> </FormItem> )} />
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader><CardTitle>Additional Information (Optional)</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-               <FormField control={form.control} name="tags" render={({ field }) => ( <FormItem> <FormLabel>Tags</FormLabel> <FormControl><Input placeholder="e.g., Italian, Pasta, Quick Dinner" {...field} /></FormControl> <FormDescription>Comma-separated list of tags.</FormDescription> <FormMessage /> </FormItem> )} />
+               <FormField control={form.control} name="tags" render={({ field }) => ( <FormItem> <FormLabel>Tags</FormLabel> <FormControl><Input placeholder="e.g., Italian, Pasta" {...field} /></FormControl> <FormDescription>Comma-separated list of tags.</FormDescription> <FormMessage /> </FormItem> )} />
               <fieldset className="space-y-2 rounded-lg border p-4">
                 <legend className="-ml-1 px-1 text-sm font-medium">Nutritional Info (per serving)</legend>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
@@ -184,7 +226,7 @@ export default function NewRecipePage() {
             </CardContent>
             <CardFooter>
               <Button type="submit" className="w-full md:w-auto bg-primary hover:bg-primary/90" disabled={isSubmitting}>
-                {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : <><PlusCircle className="mr-2 h-4 w-4" /> Add Recipe</>}
+                {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : <><Save className="mr-2 h-4 w-4" /> Save Changes</>}
               </Button>
             </CardFooter>
           </Card>
