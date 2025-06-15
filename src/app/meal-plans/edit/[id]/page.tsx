@@ -25,7 +25,7 @@ import { ArrowLeft, CalendarIcon, PlusCircle, Save, Trash2, Loader2, Lightbulb, 
 import type { Meal, MealPlan, MealType, Recipe, AiMealSuggestion, AiMealSuggestionInput, Ingredient as RecipeIngredient } from '@/types';
 import { cn } from '@/lib/utils';
 import { loadFromLocalStorage, saveToLocalStorage, generateId } from '@/lib/localStorage';
-import { getAiMealSuggestions } from '../actions'; 
+import { getAiMealSuggestions } from '../../actions'; 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 

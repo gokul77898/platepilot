@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, PlusCircle, Save, Trash2, Loader2, Sparkles } from 'lucide-react';
 import { loadFromLocalStorage, saveToLocalStorage, generateId } from '@/lib/localStorage';
 import type { Recipe, Ingredient, AnalyzeRecipeNutritionInputIngredient } from '@/types';
-import { getRecipeNutritionAnalysis } from '../../actions';
+import { getRecipeNutritionAnalysis } from '../actions';
 
 const RECIPES_STORAGE_KEY = 'recipes';
 
