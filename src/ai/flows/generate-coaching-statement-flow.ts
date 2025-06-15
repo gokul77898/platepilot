@@ -67,7 +67,8 @@ const generateCoachingStatementFlow = ai.defineFlow(
   async (input) => {
     const {output} = await prompt(input);
     if (!output) {
-      return { statement: "I'm ready to help you on your journey! To give you the best advice, tell me a bit more about your goals and what you find challenging. Consider one small positive change you can make today." };
+      // Throw an error if the model doesn't return an output
+      throw new Error("The AI model did not return a valid coaching statement.");
     }
     return output;
   }

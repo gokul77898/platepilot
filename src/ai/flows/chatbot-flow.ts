@@ -59,7 +59,8 @@ const chatbotFlow = ai.defineFlow(
   async (input) => {
     const {output} = await prompt(input);
     if (!output) {
-      return { aiResponse: "I'm sorry, I couldn't generate a response at this time. Please try again." };
+      // Throw an error if the model doesn't return an output
+      throw new Error("The AI model did not return a valid response for the chatbot query.");
     }
     return output;
   }
