@@ -103,6 +103,9 @@ const suggestAlternativeRecipesFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    if (!output) {
+      throw new Error("AI model did not return suggestions for alternative recipes. Please try refining your criteria.");
+    }
+    return output;
   }
 );

@@ -59,6 +59,9 @@ const suggestRecipesGivenConstraintsFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await suggestRecipesGivenConstraintsPrompt(input);
-    return output!;
+    if (!output) {
+      throw new Error("AI model did not return recipe ideas based on the provided constraints. Please try again.");
+    }
+    return output;
   }
 );

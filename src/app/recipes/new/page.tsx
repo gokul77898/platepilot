@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, PlusCircle, Save, Trash2, Loader2, Sparkles } from 'lucide-react';
 import { loadFromLocalStorage, saveToLocalStorage, generateId } from '@/lib/localStorage';
 import type { Recipe, Ingredient, AnalyzeRecipeNutritionInputIngredient } from '@/types';
-import { getRecipeNutritionAnalysis } from '../../actions';
+import { getRecipeNutritionAnalysis } from '../actions';
 
 const RECIPES_STORAGE_KEY = 'recipes';
 
@@ -213,7 +213,7 @@ export default function NewRecipePage() {
             <CardHeader>
                 <div className="flex justify-between items-center">
                     <CardTitle>Additional Information (Optional)</CardTitle>
-                    <Button type="button" variant="outline" size="sm" onClick={handleAnalyzeNutrition} disabled={isAnalyzingNutrition}>
+                    <Button type="button" variant="outline" size="sm" onClick={handleAnalyzeNutrition} disabled={isAnalyzingNutrition || isSubmitting}>
                         {isAnalyzingNutrition ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4 text-accent" />}
                         AI Analyze Nutrition
                     </Button>
