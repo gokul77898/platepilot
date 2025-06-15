@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, PlusCircle, Save, Trash2, Loader2, Sparkles } from 'lucide-react';
 import { loadFromLocalStorage, saveToLocalStorage, generateId } from '@/lib/localStorage';
 import type { Recipe, Ingredient, AnalyzeRecipeNutritionInputIngredient } from '@/types';
-import { getRecipeNutritionAnalysis } from '../actions';
+import { getRecipeNutritionAnalysis } from '../../actions';
 
 const RECIPES_STORAGE_KEY = 'recipes';
 
@@ -93,7 +93,7 @@ export default function NewRecipePage() {
       tags: data.tags ? data.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0) : [],
       imageUrl: data.imageUrl || "https://placehold.co/600x400.png", 
       ingredients: data.ingredients.map(ing => ({...ing, id: ing.id || generateId() })), 
-      nutritionalInfo: { // Ensure nutritionalInfo is an object, even if fields are undefined
+      nutritionalInfo: {
         calories: data.nutritionalInfo?.calories,
         protein: data.nutritionalInfo?.protein,
         carbs: data.nutritionalInfo?.carbs,
@@ -185,7 +185,11 @@ export default function NewRecipePage() {
                 </div>
               ))}
               <Button type="button" variant="outline" size="sm" onClick={() => appendIngredient({ id: generateId(), name: '', quantity: '', unit: '' })}> <PlusCircle className="mr-2 h-4 w-4" /> Add Ingredient </Button>
-              <FormField name="ingredients" render={() => <FormMessage>{form.formState.errors.ingredients?.message || form.formState.errors.ingredients?.root?.message}</FormMessage>} />
+              { (form.formState.errors.ingredients?.message || form.formState.errors.ingredients?.root?.message) &&
+                <FormMessage>
+                    {form.formState.errors.ingredients?.message || form.formState.errors.ingredients?.root?.message}
+                </FormMessage>
+              }
             </CardContent>
           </Card>
           
