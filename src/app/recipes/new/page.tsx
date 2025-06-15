@@ -186,9 +186,9 @@ export default function NewRecipePage() {
               ))}
               <Button type="button" variant="outline" size="sm" onClick={() => appendIngredient({ id: generateId(), name: '', quantity: '', unit: '' })}> <PlusCircle className="mr-2 h-4 w-4" /> Add Ingredient </Button>
               { (form.formState.errors.ingredients?.message || form.formState.errors.ingredients?.root?.message) &&
-                <FormMessage>
+                <p className="text-sm font-medium text-destructive">
                     {form.formState.errors.ingredients?.message || form.formState.errors.ingredients?.root?.message}
-                </FormMessage>
+                </p>
               }
             </CardContent>
           </Card>

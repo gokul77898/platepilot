@@ -96,8 +96,7 @@ const analyzeRecipeNutritionFlow = ai.defineFlow(
   async (input) => {
     const {output} = await prompt(input);
     if (!output) {
-        // Return an empty object or specific fields as undefined/null if the AI can't process.
-        return { calories: undefined, protein: undefined, carbs: undefined, fat: undefined };
+        throw new Error("The AI model did not return nutritional analysis. Please check the recipe details or try again.");
     }
     // Ensure all optional fields are present, even if undefined, to match NutritionalInfo type.
     return {
@@ -108,3 +107,4 @@ const analyzeRecipeNutritionFlow = ai.defineFlow(
     };
   }
 );
+
